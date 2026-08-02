@@ -18,7 +18,10 @@ services:
       AUDIOMETA_WEB_TOKEN: ${AUDIOMETA_WEB_TOKEN:-}
     command: ["python", "docker_web.py"]
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/api/health', timeout=5)"]
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import os,urllib.request; r=urllib.request.Request('http://127.0.0.1:8787/api/health', headers={'X-Audiometa-Token': os.getenv('AUDIOMETA_WEB_TOKEN','')}); urllib.request.urlopen(r, timeout=5)"
       interval: 30s
       timeout: 10s
       retries: 3
