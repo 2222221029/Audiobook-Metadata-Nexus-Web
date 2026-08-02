@@ -1,23 +1,28 @@
-name: audiometa-nexus
+name: audiobook-metadata-nexus
 
 services:
   audiometa-nexus:
     build:
       context: .
       dockerfile: Dockerfile
-    image: audiometa-nexus:local
+    image: audiobook-metadata-nexus:latest
     container_name: audiometa-nexus
     restart: unless-stopped
     ports:
       - "8787:8787"
     volumes:
-      - /vol1/1000/docker/audiometa-nexus/config:/config
-      - /vol1/1000/downloads/有声书:/data
+      - ${AUDIOMETA_CONFIG_DIR:-./docker/config}:/config
+      - ${AUDIOMETA_DATA_DIR:-./docker/data}:/data
     environment:
       PROCESS_CONFIG: /config/process_params.json
       INPUT_FOLDER: /data
       WEB_HOST: 0.0.0.0
       WEB_PORT: 8787
-      # 可选：设置后所有 Web 请求都需要 X-Audiometa-Token
-      AUDIOMETA_WEB_TOKEN: ""
+      AUDIOMETA_WEB_TOKEN: ${AUDIOMETA_WEB_TOKEN:-}
     command: ["python", "docker_web.py"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
