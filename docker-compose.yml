@@ -1,0 +1,23 @@
+name: audiometa-nexus
+
+services:
+  audiometa-nexus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: audiometa-nexus:local
+    container_name: audiometa-nexus
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    volumes:
+      - /vol1/1000/docker/audiometa-nexus/config:/config
+      - /vol1/1000/downloads/有声书:/data
+    environment:
+      PROCESS_CONFIG: /config/process_params.json
+      INPUT_FOLDER: /data
+      WEB_HOST: 0.0.0.0
+      WEB_PORT: 8787
+      # 可选：设置后所有 Web 请求都需要 X-Audiometa-Token
+      AUDIOMETA_WEB_TOKEN: ""
+    command: ["python", "docker_web.py"]

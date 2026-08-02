@@ -1,0 +1,9 @@
+Pillow
+mutagen
+requests
+urllib3<3
+chardet<6
+pycryptodome
+py-mini-racer
+PyExecJS
+playwright

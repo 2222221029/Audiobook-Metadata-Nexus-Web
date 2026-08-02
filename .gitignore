@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.log
+platform_cookies.json
+platform_cookies.enc
+process_params.json
+.audiometa_snapshot.json
+docker/config/
+docker/data/
+.env
