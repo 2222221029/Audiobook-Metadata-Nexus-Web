@@ -282,17 +282,26 @@ def collect_tags_and_year_from_payload(payload):
             if year and (not release_date or year > release_date):
                 release_date = year
         for key, value in data.items():
-            if key in ("tagName", "labelName", "categoryName", "keyword", "name", "displayTags", "albumTags", "tags", "tag_list"):
+            if key in (
+                "tagName", "labelName", "categoryName", "categoryTitle", "displayName",
+                "keyword", "name", "displayTags", "albumTags", "tags", "tag_list",
+                "newShowTags", "newShowTags2", "newShowTags3", "newShowTags4",
+                "showTags", "showTags2", "showTags3", "categoryShowTags",
+                "metaDataTags", "metadataValues", "albumMetaValueInfos", "relativeTags",
+                "metadataValueName", "metadataName", "showName",
+            ):
                 if isinstance(value, str):
                     for tag in re.split(r"[,，\s|]+", value):
                         add_tag(tag)
                 elif isinstance(value, list):
                     for item in value:
                         if isinstance(item, dict):
+                            add_tag(first_value(item, "tagName", "labelName", "displayName", "metadataValueName", "showName", "name", "title", "text", "value"))
                             extract_from_dict(item)
                         else:
                             add_tag(item)
                 elif isinstance(value, dict):
+                    add_tag(first_value(value, "tagName", "labelName", "displayName", "metadataValueName", "showName", "name", "title", "text", "value"))
                     extract_from_dict(value)
             elif isinstance(value, dict):
                 extract_from_dict(value)
@@ -334,7 +343,11 @@ def normalize_ximalaya_payload(raw):
     anchor = first_value(info, "anchorName", "nickname")
     if not anchor and isinstance(raw.get("anchorInfo"), dict):
         anchor = first_value(raw["anchorInfo"], "anchorName", "nickname")
-    return {
+    payload_tags, payload_year = collect_tags_and_year_from_payload(raw)
+    category = first_value(info, "categoryTitle", "categoryName")
+    if category and category not in payload_tags:
+        payload_tags.append(category)
+    normalized = {
         "title": title,
         "subtitle": subtitle,
         "author": "",
@@ -342,8 +355,37 @@ def normalize_ximalaya_payload(raw):
         "artist": anchor,
         "desc": first_value(info, "detailRichIntro", "intro"),
         "cover": first_value(info, "cover", "coverUrlLarge", "coverUrlMiddle"),
-        "releaseDate": extract_year(first_value(info, "createDate", "updateDate", "createdAt", "createAt")),
+        "releaseDate": payload_year or extract_year(first_value(info, "createDate", "updateDate", "createdAt", "createAt")),
+        "category": category,
+        "tags": payload_tags,
+        "_ximalaya_raw": raw,
     }
+    return normalized
+
+
+def merge_ximalaya_inferred_tags(data, raw=None):
+    """Infer only high-confidence APP labels when public APIs hide metadata."""
+    tags = list(data.get("tags") or [])
+    raw = raw or data.get("_ximalaya_raw") or {}
+    searchable = clean_html_tags(json.dumps(raw, ensure_ascii=False))
+    searchable += " " + " ".join(str(data.get(key) or "") for key in ("title", "subtitle", "desc", "category"))
+
+    def add(tag):
+        if tag not in tags:
+            tags.append(tag)
+
+    category_id = str(first_value(raw.get("albumPageMainInfo", raw), "categoryId"))
+    if data.get("category") == "有声图书" or category_id == "1001":
+        add("有声图书")
+    if any(word in searchable for word in ("影视原著", "同名原著", "电影原著", "电视剧原著", "历史正剧", "影视级")):
+        add("影视原著")
+    if any(word in searchable for word in ("历史小说", "历史正剧")):
+        add("历史小说")
+    album_type = first_value(raw.get("albumPageMainInfo", raw), "albumType", "trackType")
+    is_paid = first_value(raw.get("albumPageMainInfo", raw), "isPaid", "albumPayType")
+    if (data.get("category") == "有声图书" or category_id == "1001") and (str(album_type) == "7" or str(is_paid).lower() in ("true", "2")):
+        add("出版物")
+    return tags
 
 
 def extract_advanced_info(album_id, api_source):
@@ -354,18 +396,27 @@ def extract_advanced_info(album_id, api_source):
     def merge_payload(payload):
         nonlocal release_date
         tags, year = collect_tags_and_year_from_payload(payload)
+        if api_source == "喜马拉雅":
+            tags = [tag for tag in tags if tag not in {"其他", "喜马拉雅", "喜马拉雅听书", "喜马拉雅电台", "喜马拉雅好声音", "网络电台", "个人电台", "音频"}]
         tags_set.update(tags)
         if year and (not release_date or year > release_date):
             release_date = year
 
     if api_source == "喜马拉雅":
+        numeric_id = re.search(r"\d+", str(album_id or ""))
+        album_id = numeric_id.group(0) if numeric_id else str(album_id).strip()
+        app_cookie = os.environ.get("XIMALAYA_COOKIE", "").strip()
+        app_headers = {"User-Agent": "ting_10.0.0(Android,14)", "Referer": "https://mobile.ximalaya.com/"}
+        if app_cookie:
+            app_headers["Cookie"] = app_cookie
         urls = [
             (f"https://m.ximalaya.com/m-revision/page/album/v1/detail?albumId={album_id}", {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X)"}),
+            (f"https://m.ximalaya.com/m-revision/page/album/v2/queryAlbumPage/{album_id}?albumCounts=track", {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X)"}),
+            (f"https://m.ximalaya.com/m-revision/page/album/queryAlbumPage/{album_id}?albumCounts=track", {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X)"}),
+            (f"https://mobile.ximalaya.com/mobile-album/album/page?albumId={album_id}&device=android&source=0&ac=WIFI&supportWebp=true&isAsc=true&page=1&pageSize=20", app_headers),
             (f"https://mobile.ximalaya.com/mobile/v1/album?albumId={album_id}&device=android", {"User-Agent": "ting_6.7.9(unknown,android)"}),
             (f"https://www.ximalaya.com/revision/album/v1/simple?albumId={album_id}", {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}),
         ]
-        numeric_id = re.search(r"\d+", str(album_id or ""))
-        album_id = numeric_id.group(0) if numeric_id else str(album_id).strip()
         for url, headers in urls:
             try:
                 response = session.get(url, headers=headers, timeout=5)
@@ -373,8 +424,6 @@ def extract_advanced_info(album_id, api_source):
                     merge_payload(response.json())
             except Exception:
                 pass
-            if tags_set and release_date:
-                break
         try:
             page = session.get(
                 f"https://www.ximalaya.com/album/{album_id}",
@@ -388,9 +437,9 @@ def extract_advanced_info(album_id, api_source):
                         merge_payload(json.loads(block.strip()))
                     except Exception:
                         pass
-                for content in re.findall(r'<meta[^>]+(?:name|property)=["\'](?:keywords|article:tag)["\'][^>]+content=["\']([^"\']+)', html, re.I):
+                for content in re.findall(r'<meta[^>]+property=["\']article:tag["\'][^>]+content=["\']([^"\']+)', html, re.I):
                     merge_payload({"tags": re.split(r"[,，|]", content)})
-                for candidate in re.findall(r'"(?:albumTags|displayTags|keywords|tags|categoryName)"\s*:\s*(\[[^\]]*\]|"[^"]+")', html, re.I):
+                for candidate in re.findall(r'"(?:albumTags|displayTags|newShowTags|newShowTags2|tags|categoryName)"\s*:\s*(\[[^\]]*\]|"[^"]+")', html, re.I):
                     try:
                         merge_payload({"tags": json.loads(candidate)})
                     except Exception:
@@ -464,10 +513,12 @@ def fetch_api_metadata(api_source, api_id):
     if not api_id:
         raise ValueError("请先填写平台专辑 ID")
     if api_source == "喜马拉雅":
-        data = normalize_ximalaya_payload(ximalaya_api("album", api_id))
+        raw = ximalaya_api("album", api_id)
+        data = normalize_ximalaya_payload(raw)
         if len(data.get("tags") or []) < 2 or not data.get("releaseDate"):
             adv_tags, adv_year = extract_advanced_info(api_id, api_source)
             data = merge_advanced_fetch_data(data, adv_tags, adv_year)
+        data["tags"] = merge_ximalaya_inferred_tags(data, raw)
         return normalize_metadata(data, api_source)
     if api_source == "懒人听书":
         data = lanren_api(api_id)

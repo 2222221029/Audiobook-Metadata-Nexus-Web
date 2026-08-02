@@ -10,13 +10,19 @@ from config import get_platform_cookies, FANQIE_SHARE_ID, FANQIE_X_BOGUS, FANQIE
 from network_utils import get_safe_session, _debug_log, clean_html_tags
 
 def ximalaya_api(endpoint: str, id: str) -> dict:
+    id_match = re.search(r"\d+", str(id or ""))
+    id = id_match.group(0) if id_match else str(id or "").strip()
     urls = {
         "album": f"https://www.ximalaya.com/revision/album/v1/simple?albumId={id}",
         "anchor": f"https://www.ximalaya.com/revision/user/basic?uid={id}"
     }
     try:
         session = get_safe_session()
-        resp = session.get(urls[endpoint], headers={"Referer": "https://www.ximalaya.com/"}, timeout=10)
+        headers = {"Referer": "https://www.ximalaya.com/", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        cookie = os.environ.get("XIMALAYA_COOKIE", "").strip()
+        if cookie:
+            headers["Cookie"] = cookie
+        resp = session.get(urls[endpoint], headers=headers, timeout=10)
         if resp.status_code != 200: raise Exception(f"API请求失败，状态码：{resp.status_code}")
         return resp.json().get("data", {})
     except Exception as e:

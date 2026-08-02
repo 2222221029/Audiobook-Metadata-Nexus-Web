@@ -16,6 +16,8 @@ docker compose up -d
 
 如需保护 Web 页面，可在 `docker-compose.yml` 设置 `AUDIOMETA_WEB_TOKEN`，然后在页面工具栏点击“设置访问令牌”。
 
+喜马拉雅公开接口会对部分专辑隐藏 APP 属性标签。程序会自动使用多接口、页面结构化数据和高置信度分类兜底；如仍缺少标签，可选填 `.env` 中的 `XIMALAYA_COOKIE`，使用你自己的喜马拉雅登录 Cookie 请求完整数据。Cookie 只通过环境变量读取，不会写入仓库。
+
 访问地址：
 
 ```text

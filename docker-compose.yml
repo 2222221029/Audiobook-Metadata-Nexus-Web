@@ -16,6 +16,7 @@ services:
       WEB_HOST: 0.0.0.0
       WEB_PORT: 8787
       AUDIOMETA_WEB_TOKEN: ${AUDIOMETA_WEB_TOKEN:-}
+      XIMALAYA_COOKIE: ${XIMALAYA_COOKIE:-}
     command: ["python", "docker_web.py"]
     healthcheck:
       test:
