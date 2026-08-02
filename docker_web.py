@@ -364,6 +364,8 @@ def extract_advanced_info(album_id, api_source):
             (f"https://mobile.ximalaya.com/mobile/v1/album?albumId={album_id}&device=android", {"User-Agent": "ting_6.7.9(unknown,android)"}),
             (f"https://www.ximalaya.com/revision/album/v1/simple?albumId={album_id}", {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}),
         ]
+        numeric_id = re.search(r"\d+", str(album_id or ""))
+        album_id = numeric_id.group(0) if numeric_id else str(album_id).strip()
         for url, headers in urls:
             try:
                 response = session.get(url, headers=headers, timeout=5)
@@ -373,6 +375,28 @@ def extract_advanced_info(album_id, api_source):
                 pass
             if tags_set and release_date:
                 break
+        try:
+            page = session.get(
+                f"https://www.ximalaya.com/album/{album_id}",
+                headers={"User-Agent": DESKTOP_UA, "Referer": "https://www.ximalaya.com/"},
+                timeout=8,
+            )
+            if page.status_code == 200:
+                html = page.text
+                for block in re.findall(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, re.I | re.S):
+                    try:
+                        merge_payload(json.loads(block.strip()))
+                    except Exception:
+                        pass
+                for content in re.findall(r'<meta[^>]+(?:name|property)=["\'](?:keywords|article:tag)["\'][^>]+content=["\']([^"\']+)', html, re.I):
+                    merge_payload({"tags": re.split(r"[,，|]", content)})
+                for candidate in re.findall(r'"(?:albumTags|displayTags|keywords|tags|categoryName)"\s*:\s*(\[[^\]]*\]|"[^"]+")', html, re.I):
+                    try:
+                        merge_payload({"tags": json.loads(candidate)})
+                    except Exception:
+                        pass
+        except Exception as exc:
+            _debug_log(f"[Ximalaya page fallback] {exc}")
     elif api_source == "懒人听书":
         try:
             response = session.get(
@@ -441,7 +465,7 @@ def fetch_api_metadata(api_source, api_id):
         raise ValueError("请先填写平台专辑 ID")
     if api_source == "喜马拉雅":
         data = normalize_ximalaya_payload(ximalaya_api("album", api_id))
-        if not data.get("tags") or not data.get("releaseDate"):
+        if len(data.get("tags") or []) < 2 or not data.get("releaseDate"):
             adv_tags, adv_year = extract_advanced_info(api_id, api_source)
             data = merge_advanced_fetch_data(data, adv_tags, adv_year)
         return normalize_metadata(data, api_source)
@@ -1466,6 +1490,9 @@ INDEX_HTML = r"""<!doctype html>
       background: var(--surface-2); border-color: var(--border-strong);
       transform: translateY(-1px); box-shadow: var(--shadow-sm);
     }
+    .btn-primary:hover:not(:disabled), .btn-green:hover:not(:disabled),
+    .btn-amber:hover:not(:disabled), .btn-red:hover:not(:disabled),
+    .btn-indigo:hover:not(:disabled) { color: #fff; }
     button:active:not(:disabled) { transform: translateY(0); }
     button:disabled { opacity: .38; cursor: not-allowed; }
     .btn-primary {
@@ -3055,9 +3082,16 @@ INDEX_HTML = r"""<!doctype html>
       renderOverview(s);
     }
 
+    let statusRefreshInFlight = false;
     async function refreshStatus() {
-      const data = await api('/api/status');
-      applyStatus(data.status);
+      if (statusRefreshInFlight) return;
+      statusRefreshInFlight = true;
+      try {
+        const data = await api('/api/status', { timeoutMs: 10000 });
+        applyStatus(data.status);
+      } finally {
+        statusRefreshInFlight = false;
+      }
     }
 
     function previewCover() {
