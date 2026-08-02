@@ -2,10 +2,7 @@ name: audiobook-metadata-nexus
 
 services:
   audiometa-nexus:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: audiobook-metadata-nexus:latest
+    image: ghcr.io/2222221029/audiobook-metadata-nexus:latest
     container_name: audiometa-nexus
     restart: unless-stopped
     ports:
