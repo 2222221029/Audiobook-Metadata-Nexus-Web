@@ -108,6 +108,12 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("function fetchAuthorByTitle()", INDEX_HTML)
         self.assertIn("'/api/search-author'", INDEX_HTML)
 
+    def test_source_controls_share_one_aligned_grid(self):
+        self.assertIn('class="source-controls"', INDEX_HTML)
+        self.assertIn(".source-controls > input,", INDEX_HTML)
+        self.assertIn("width: 100%; min-width: 0; min-height: 46px;", INDEX_HTML)
+        self.assertNotIn('class="source-action"', INDEX_HTML)
+
     def test_ypshuo_author_candidates_require_exact_title_and_are_distinct(self):
         candidates = [
             {"id": "1", "novel_name": "我不是戏神", "author_name": "三九音域"},

@@ -2135,8 +2135,21 @@ INDEX_HTML = r"""<!doctype html>
       width: 16px; height: 16px; min-height: 0; padding: 0; margin: 0 6px 0 0;
       vertical-align: -2px; accent-color: var(--primary); box-shadow: none;
     }
-    .inline { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+    .inline { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: stretch; }
+    .inline > button { min-height: 40px; }
     .field-row { display: grid; grid-template-columns: minmax(120px, .46fr) minmax(0, 1fr); gap: 8px; }
+    .source-controls {
+      display: grid;
+      grid-template-columns: minmax(150px, .9fr) minmax(260px, 1.65fr) repeat(2, minmax(180px, 1fr));
+      gap: 10px; align-items: stretch;
+    }
+    .source-controls > .custom-select,
+    .source-controls > input,
+    .source-controls > button {
+      width: 100%; min-width: 0; min-height: 46px;
+    }
+    .source-controls > input { padding-left: 14px; padding-right: 14px; }
+    .source-controls > button { border-radius: 12px; font-size: 13px; }
     .format-row { display: grid; grid-template-columns: minmax(150px, 1.2fr) minmax(110px, .9fr); gap: 8px; }
     .two-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .checks { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 6px 0 2px; }
@@ -2217,16 +2230,12 @@ INDEX_HTML = r"""<!doctype html>
       box-shadow: 0 6px 16px var(--primary-glow);
     }
     .search-pagination { display:flex; justify-content:space-between; gap:8px; margin-top:10px; }
-    .source-action { display:flex; flex-direction:column; justify-content:flex-end; }
-    .action-stack { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
-    .source-action button { width:100%; min-height:46px; border-radius:12px; }
-    .source-action .btn-primary { box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 20%, transparent); }
-    .source-action .quiet-button { background: color-mix(in srgb, var(--surface-2) 82%, var(--primary) 18%); border-color: color-mix(in srgb, var(--primary) 20%, var(--border)); }
-    .source-action .quiet-button:hover { background: var(--primary-bg); border-color: color-mix(in srgb, var(--primary) 48%, var(--border)); }
+    .source-controls .btn-primary { box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 20%, transparent); }
+    .source-controls .quiet-button { background: color-mix(in srgb, var(--surface-2) 82%, var(--primary) 18%); border-color: color-mix(in srgb, var(--primary) 20%, var(--border)); }
+    .source-controls .quiet-button:hover { background: var(--primary-bg); border-color: color-mix(in srgb, var(--primary) 48%, var(--border)); }
     .cover-actions { display:flex; gap:8px; flex:0 0 auto; }
     .cover-actions button { min-width:112px; min-height:44px; }
     @media (max-width: 720px) {
-      .source-action { margin-top: -2px; }
       .cover-actions { width:100%; }
       .cover-actions button { flex:1; }
     }
@@ -2510,6 +2519,10 @@ INDEX_HTML = r"""<!doctype html>
       .ha-process, .ha-config { flex: 1 1 100%; }
       .ha-config { border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 8px; }
       .grid, .grid-3 { grid-template-columns: 1fr; }
+      .source-controls { grid-template-columns: minmax(140px, .85fr) minmax(0, 1.55fr); }
+      .source-controls > button { min-height: 42px; }
+      .source-controls > button:nth-of-type(1) { grid-column: 1; }
+      .source-controls > button:nth-of-type(2) { grid-column: 2; }
       .span-2, .span-3, .grid-3 .span-3 { grid-column: span 1; }
       .cover-row { grid-template-columns: 148px 1fr; }
       .overview { grid-template-columns: repeat(2, 1fr); }
@@ -2533,6 +2546,9 @@ INDEX_HTML = r"""<!doctype html>
       .ha-process { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .ha-config { grid-template-columns: repeat(2, minmax(0, 1fr)); border: 0; padding: 0; }
       .ha-process button, .ha-config button { min-height: 38px; font-size: 12px; }
+      .source-controls { grid-template-columns: 1fr; gap: 7px; }
+      .source-controls > button:nth-of-type(1), .source-controls > button:nth-of-type(2) { grid-column: auto; }
+      .source-controls > input, .source-controls > button, .source-controls > .custom-select { min-height: 40px; }
       .tabs {
         position: fixed; left: 0; right: 0; bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 39;
         height: auto; padding: 7px 8px; gap: 5px; overflow-x: auto; border-top: 1px solid var(--border);
@@ -2653,17 +2669,13 @@ INDEX_HTML = r"""<!doctype html>
             <input name="input_folder" placeholder="/data/专辑目录" />
             <button type="button" class="quiet-button" id="browseBtn">浏览目录</button>
           </div>
-          <div class="grid" style="margin-top:10px">
-            <div>
-              <label>平台专辑 ID / 书名 / 分享链接（可选）</label>
-              <div class="field-row source-input-row"><select name="api_source"></select><input name="api_id" placeholder="输入 ID、书名或分享链接 URL" /></div>
-            </div>
-            <div class="source-action">
-              <label>&nbsp;</label>
-              <div class="action-stack">
-                <button type="button" class="btn-primary" id="fetchBtn">获取元数据</button>
-                <button type="button" class="quiet-button" id="searchTitleBtn">按书名搜索</button>
-              </div>
+          <div style="margin-top:12px">
+            <label>平台专辑 ID / 书名 / 分享链接（可选）</label>
+            <div class="source-controls">
+              <select name="api_source"></select>
+              <input name="api_id" placeholder="输入 ID、书名或分享链接 URL" />
+              <button type="button" class="btn-primary" id="fetchBtn">获取元数据</button>
+              <button type="button" class="quiet-button" id="searchTitleBtn">按书名搜索</button>
             </div>
           </div>
           <div id="titleSearchBackdrop" class="search-results-backdrop" hidden></div>
