@@ -2053,6 +2053,16 @@ INDEX_HTML = r"""<!doctype html>
     .search-result-title { display:block; overflow:hidden; font-weight: 700; line-height:1.45; white-space:normal; overflow-wrap:anywhere; }
     .search-result-meta { margin-top: 3px; color: var(--text-3); font-size: 12px; }
     .search-pagination { display:flex; justify-content:space-between; gap:8px; margin-top:10px; }
+    .source-action { display:flex; flex-direction:column; justify-content:flex-end; }
+    .action-stack { display:grid; gap:8px; }
+    .source-action button { width:100%; min-height:46px; }
+    .cover-actions { display:flex; gap:8px; flex:0 0 auto; }
+    .cover-actions button { min-width:112px; min-height:44px; }
+    @media (max-width: 720px) {
+      .source-action { margin-top: -2px; }
+      .cover-actions { width:100%; }
+      .cover-actions button { flex:1; }
+    }
 
     /* ── Toolbox ──────────────────────────────── */
     .toolbox {
@@ -2480,16 +2490,18 @@ INDEX_HTML = r"""<!doctype html>
               <label>平台专辑 ID / 书名（可选）</label>
               <div class="field-row"><select name="api_source"></select><input name="api_id" placeholder="输入专辑 ID 或书名" /></div>
             </div>
-            <div>
+            <div class="source-action">
               <label>&nbsp;</label>
-              <button type="button" class="btn-primary" id="fetchBtn" style="width:100%;min-height:40px">获取元数据</button>
-              <button type="button" class="quiet-button" id="searchTitleBtn" style="width:100%;min-height:36px;margin-top:7px">按书名搜索</button>
+              <div class="action-stack">
+                <button type="button" class="btn-primary" id="fetchBtn">获取元数据</button>
+                <button type="button" class="quiet-button" id="searchTitleBtn">按书名搜索</button>
+              </div>
             </div>
             <div>
               <label>链接搜索（起点 / 番茄）</label>
               <div class="field-row"><select name="link_platform"></select><input name="link_url" placeholder="分享链接 URL" /></div>
             </div>
-            <div>
+            <div class="source-action">
               <label>&nbsp;</label>
               <button type="button" class="btn-green" id="fetchLinkBtn" style="width:100%;min-height:40px">请求链接</button>
             </div>
@@ -2552,11 +2564,13 @@ INDEX_HTML = r"""<!doctype html>
         <div class="section">
           <div class="section-title"><span class="section-icon">▣</span>视觉与内容</div>
           <label>封面图片（Docker 版支持网络封面或容器内路径）</label>
-          <div class="inline" style="margin-bottom:10px">
+          <div class="inline cover-input-row" style="margin-bottom:10px">
             <input name="manual_cover_path" placeholder="/data/专辑/cover.jpg 或 https://..." />
             <input type="file" id="coverFileInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
-            <button type="button" class="quiet-button" id="uploadCoverBtn">从电脑上传</button>
-            <button type="button" class="quiet-button" id="previewCoverBtn">预览封面</button>
+            <div class="cover-actions">
+              <button type="button" class="quiet-button" id="uploadCoverBtn">从电脑上传</button>
+              <button type="button" class="quiet-button" id="previewCoverBtn">预览封面</button>
+            </div>
           </div>
           <div class="cover-row">
             <div>
