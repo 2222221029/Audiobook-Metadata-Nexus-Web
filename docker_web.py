@@ -261,6 +261,65 @@ def collect_candidate_tags(data):
     return [tag for tag in tags if tag]
 
 
+def _ximalaya_dicts(value):
+    if isinstance(value, dict):
+        yield value
+        for child in value.values():
+            yield from _ximalaya_dicts(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _ximalaya_dicts(child)
+
+
+def extract_ximalaya_release_year(payload):
+    """Extract the album year without using episode/update timestamps."""
+    if not isinstance(payload, dict):
+        return ""
+
+    preferred_keys = (
+        "releaseDate", "release_date", "publishDate", "publish_date",
+        "publishTime", "publish_time", "year",
+    )
+    created_keys = (
+        "createdAt", "created_at", "createDate", "create_date",
+        "createTime", "create_time", "createAt",
+    )
+    album_keys = {
+        "albumId", "album_id", "albumTitle", "album_title", "albumName", "album_name",
+    }
+
+    containers = [payload]
+    for key in ("albumPageMainInfo", "albumInfo", "album", "detail"):
+        value = payload.get(key)
+        if isinstance(value, dict):
+            containers.append(value)
+    data = payload.get("data")
+    if isinstance(data, dict):
+        containers.append(data)
+        for key in ("albumPageMainInfo", "albumInfo", "album", "detail"):
+            value = data.get(key)
+            if isinstance(value, dict):
+                containers.append(value)
+
+    def first_year(mappings, keys):
+        for mapping in mappings:
+            for key in keys:
+                year = extract_year(mapping.get(key))
+                if year:
+                    return year
+        return ""
+
+    # Explicit publication fields are authoritative wherever they occur.
+    year = first_year(containers, preferred_keys)
+    if year:
+        return year
+
+    # created_at is valid only on an album-shaped object. Do not descend into
+    # last_uptrack/tracks, whose timestamps describe individual episodes.
+    album_mappings = [mapping for mapping in _ximalaya_dicts(payload) if album_keys.intersection(mapping)]
+    return first_year(album_mappings, created_keys)
+
+
 def collect_tags_and_year_from_payload(payload):
     tags_set = set()
     release_date = ""
@@ -396,7 +455,7 @@ def normalize_ximalaya_payload(raw):
     anchor = first_value(info, "anchorName", "nickname")
     if not anchor and isinstance(raw.get("anchorInfo"), dict):
         anchor = first_value(raw["anchorInfo"], "anchorName", "nickname")
-    payload_tags, payload_year = collect_tags_and_year_from_payload(raw)
+    payload_tags, _ = collect_tags_and_year_from_payload(raw)
     category = first_value(info, "categoryTitle", "categoryName")
     if category and category not in payload_tags:
         payload_tags.append(category)
@@ -408,7 +467,7 @@ def normalize_ximalaya_payload(raw):
         "artist": anchor,
         "desc": first_value(info, "detailRichIntro", "intro"),
         "cover": first_value(info, "cover", "coverUrlLarge", "coverUrlMiddle"),
-        "releaseDate": payload_year or extract_year(first_value(info, "createDate", "updateDate", "createdAt", "createAt")),
+        "releaseDate": extract_ximalaya_release_year(raw),
         "category": category,
         "tags": payload_tags,
         "_ximalaya_raw": raw,
@@ -431,6 +490,7 @@ def extract_advanced_info(album_id, api_source):
         tags, year = collect_tags_and_year_from_payload(payload)
         if api_source == "喜马拉雅":
             tags = [tag for tag in tags if tag not in {"其他", "喜马拉雅", "喜马拉雅听书", "喜马拉雅电台", "喜马拉雅好声音", "网络电台", "个人电台", "音频"}]
+            year = extract_ximalaya_release_year(payload)
         add_tags(tags)
         if year and (not release_date or year > release_date):
             release_date = year
@@ -474,14 +534,14 @@ def extract_advanced_info(album_id, api_source):
     return tags_list, release_date
 
 
-def merge_advanced_fetch_data(data, adv_tags, adv_year):
+def merge_advanced_fetch_data(data, adv_tags, adv_year, prefer_year=False):
     merged = dict(data or {})
     if adv_tags:
         existing_tags = merged.get("tags", [])
         if isinstance(existing_tags, str):
             existing_tags = [existing_tags]
         merged["tags"] = list(dict.fromkeys(list(existing_tags or []) + list(adv_tags)))
-    if adv_year and not merged.get("releaseDate"):
+    if adv_year and (prefer_year or not merged.get("releaseDate")):
         merged["releaseDate"] = adv_year
     return merged
 
@@ -528,7 +588,7 @@ def fetch_api_metadata(api_source, api_id):
         data = normalize_ximalaya_payload(raw)
         # APP labels are a separate list and must be fetched even when web tags exist.
         adv_tags, adv_year = extract_advanced_info(api_id, api_source)
-        data = merge_advanced_fetch_data(data, adv_tags, adv_year)
+        data = merge_advanced_fetch_data(data, adv_tags, adv_year, prefer_year=True)
         return normalize_metadata(data, api_source)
     if api_source == "懒人听书":
         data = lanren_api(api_id)
@@ -906,6 +966,8 @@ class AppState:
     def __init__(self):
         self.lock = threading.RLock()
         self.logs = []
+        self.log_seq = 0
+        self.log_epoch = 0
         self.progress = 0
         self.message = "等待就绪"
         self.running = False
@@ -921,8 +983,12 @@ class AppState:
 
     def add_log(self, message, level="info"):
         with self.lock:
-            self.logs.append({"level": level, "message": str(message)})
-            self.logs = self.logs[-5000:]
+            text = str(message)
+            if len(text) > 8000:
+                text = text[:8000] + "…（日志内容过长，已截断）"
+            self.log_seq += 1
+            self.logs.append({"id": self.log_seq, "level": level, "message": text})
+            self.logs = self.logs[-2000:]
 
     def set_progress(self, progress, message):
         with self.lock:
@@ -930,8 +996,22 @@ class AppState:
             if message:
                 self.message = message
 
-    def snapshot(self):
+    def snapshot(self, logs_after=None, log_epoch=None, include_logs=True):
         with self.lock:
+            logs_reset = False
+            if not include_logs:
+                logs = []
+            elif logs_after is None:
+                logs = list(self.logs)
+                logs_reset = True
+            else:
+                first_log_id = self.logs[0]["id"] if self.logs else self.log_seq + 1
+                logs_reset = (
+                    log_epoch != self.log_epoch
+                    or logs_after > self.log_seq
+                    or logs_after < first_log_id - 1
+                )
+                logs = list(self.logs) if logs_reset else [item for item in self.logs if item["id"] > logs_after]
             return {
                 "running": self.running,
                 "progress": self.progress,
@@ -940,7 +1020,10 @@ class AppState:
                 "finished_at": self.finished_at,
                 "result": self.result,
                 "error": self.error,
-                "logs": list(self.logs),
+                "logs": logs,
+                "log_seq": self.log_seq,
+                "log_epoch": self.log_epoch,
+                "logs_reset": logs_reset,
                 "failed_items": list(self.failed_items),
                 "queue": list(self.queue),
                 "current_task_id": self.current_task_id,
@@ -950,6 +1033,7 @@ class AppState:
         with self.lock:
             if clear_logs:
                 self.logs = []
+                self.log_epoch += 1
             self.progress = 0
             self.message = "׼ʼ"
             self.running = True
@@ -1224,7 +1308,16 @@ class RequestHandler(BaseHTTPRequestHandler):
             if path == "/api/config/export":
                 return json_response(self, {"ok": True, "params": load_params(), "exported_at": datetime.datetime.now().isoformat()})
             if path == "/api/status":
-                return json_response(self, {"ok": True, "status": STATE.snapshot()})
+                try:
+                    logs_after = int((query.get("logs_after") or [""])[0])
+                    client_log_epoch = int((query.get("log_epoch") or [""])[0])
+                except (TypeError, ValueError):
+                    logs_after = None
+                    client_log_epoch = None
+                return json_response(self, {
+                    "ok": True,
+                    "status": STATE.snapshot(logs_after=logs_after, log_epoch=client_log_epoch),
+                })
             if path == "/api/health":
                 return json_response(self, {"ok": True, "health": {
                     "ffmpeg": Path(FFMPEG_PATH).exists(),
@@ -2004,6 +2097,12 @@ INDEX_HTML = r"""<!doctype html>
     html[data-theme="light"] .log-line.error   { color: #b91c1c; }
     html[data-theme="light"] .log-line.warning { color: #92400e; }
     html[data-theme="light"] .log-line.info    { color: #1d4ed8; }
+    .log-line.log-truncated {
+      margin-bottom: 8px; padding: 7px 10px;
+      color: var(--text-3); background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: var(--radius-xs);
+      font-family: "Inter", "PingFang SC", sans-serif;
+    }
 
     /* ── Overview ──────────────────────────────── */
     .overview {
@@ -2585,7 +2684,17 @@ INDEX_HTML = r"""<!doctype html>
     let selectedDir = '';
     const selectedQueueIds = new Set();
     let editingQueueId = '';
-    let lastLogSize = -1;
+    const MAX_CLIENT_LOGS = 1200;
+    const MAX_RENDERED_LOGS = 600;
+    let clientLogs = [];
+    let lastLogSeq = 0;
+    let currentLogEpoch = -1;
+    let lastRenderedLogSeq = -1;
+    let lastRenderedLogEpoch = -1;
+    let logRenderFrame = 0;
+    let lastQueueSignature = '';
+    let lastFailedSignature = '';
+    let lastOverviewSignature = '';
     const requiredFields = [
       { key: 'input_folder', label: '音频目录', el: () => form.elements.input_folder },
       { key: 'title', label: '专辑标题', el: () => form.elements.title },
@@ -3316,27 +3425,86 @@ INDEX_HTML = r"""<!doctype html>
 
     let logFilter = 'all';
     let logKeyword = '';
+    function mergeStatusLogs(status) {
+      const incoming = Array.isArray(status.logs) ? status.logs : [];
+      const serverSeq = Number(status.log_seq);
+      const serverEpoch = Number(status.log_epoch);
+      const hasIncrementalMetadata = Number.isFinite(serverSeq) && Number.isFinite(serverEpoch);
+      if (!hasIncrementalMetadata) {
+        const changed = JSON.stringify(clientLogs) !== JSON.stringify(incoming);
+        clientLogs = incoming.slice(-MAX_CLIENT_LOGS);
+        lastLogSeq = clientLogs.length;
+        currentLogEpoch = 0;
+        status.logs = clientLogs;
+        return changed;
+      }
+
+      const reset = !!status.logs_reset || serverEpoch !== currentLogEpoch || serverSeq < lastLogSeq;
+      let changed = reset;
+      if (reset) clientLogs = [];
+      const knownIds = new Set(clientLogs.map(item => Number(item.id)).filter(Number.isFinite));
+      for (const item of incoming) {
+        const id = Number(item.id);
+        if (Number.isFinite(id) && knownIds.has(id)) continue;
+        clientLogs.push(item);
+        if (Number.isFinite(id)) knownIds.add(id);
+        changed = true;
+      }
+      if (clientLogs.length > MAX_CLIENT_LOGS) {
+        clientLogs = clientLogs.slice(-MAX_CLIENT_LOGS);
+        changed = true;
+      }
+      lastLogSeq = serverSeq;
+      currentLogEpoch = serverEpoch;
+      status.logs = clientLogs;
+      return changed;
+    }
+
+    function scheduleLogRender(force = false) {
+      const logPanelActive = document.getElementById('panel-log').classList.contains('active');
+      if (!force && !logPanelActive) return;
+      if (!force && lastRenderedLogSeq === lastLogSeq && lastRenderedLogEpoch === currentLogEpoch) return;
+      if (logRenderFrame) return;
+      logRenderFrame = requestAnimationFrame(() => {
+        logRenderFrame = 0;
+        renderLogs(clientLogs);
+        lastRenderedLogSeq = lastLogSeq;
+        lastRenderedLogEpoch = currentLogEpoch;
+      });
+    }
+
     function renderLogs(logs) {
-      logBox.innerHTML = '';
       const filteredLogs = (logs || []).filter(item => {
         const levelOk = logFilter === 'all' || (item.level || 'info') === logFilter;
         const keywordOk = !logKeyword || String(item.message || '').toLowerCase().includes(logKeyword.toLowerCase());
         return levelOk && keywordOk;
       });
+      const wasNearBottom = logBox.scrollHeight - logBox.scrollTop - logBox.clientHeight < 80;
+      const fragment = document.createDocumentFragment();
       if (!filteredLogs.length) {
         const div = document.createElement('div');
         div.className = 'log-line info';
         div.textContent = '等待日志实时显示。';
-        logBox.appendChild(div);
+        fragment.appendChild(div);
+        logBox.replaceChildren(fragment);
         return;
       }
-      for (const item of filteredLogs) {
+      const visibleLogs = filteredLogs.slice(-MAX_RENDERED_LOGS);
+      const hiddenCount = filteredLogs.length - visibleLogs.length;
+      if (hiddenCount > 0) {
+        const notice = document.createElement('div');
+        notice.className = 'log-line log-truncated';
+        notice.textContent = `为保持界面流畅，已隐藏较早的 ${hiddenCount} 条日志。`;
+        fragment.appendChild(notice);
+      }
+      for (const item of visibleLogs) {
         const div = document.createElement('div');
         div.className = 'log-line ' + (item.level || 'info');
         div.textContent = item.message;
-        logBox.appendChild(div);
+        fragment.appendChild(div);
       }
-      logBox.scrollTop = logBox.scrollHeight;
+      logBox.replaceChildren(fragment);
+      if (wasNearBottom || lastRenderedLogSeq < 0) logBox.scrollTop = logBox.scrollHeight;
     }
 
     function renderFailed(items) {
@@ -3416,6 +3584,7 @@ INDEX_HTML = r"""<!doctype html>
     }
 
     function applyStatus(s) {
+      const logsChanged = mergeStatusLogs(s);
       latestStatus = s;
       document.getElementById('stateText').textContent = s.message || (s.running ? '处理中' : '等待就绪');
       document.getElementById('percentText').textContent = Math.round(s.progress || 0) + '%';
@@ -3428,26 +3597,56 @@ INDEX_HTML = r"""<!doctype html>
         const allDone = !s.running && (s.queue || []).length > 0 && (s.queue || []).every(i => i.status === 'done');
         dot.className = 'state-dot' + (s.running ? ' running' : hasFailed ? ' failed' : allDone ? ' done' : '');
       }
-      renderQueue(s.queue);
-      const logSize = (s.logs || []).length;
-      if (logSize !== lastLogSize || document.getElementById('panel-log').classList.contains('active')) {
-        renderLogs(s.logs);
-        lastLogSize = logSize;
+      const queueSignature = JSON.stringify(s.queue || []);
+      if (queueSignature !== lastQueueSignature) {
+        renderQueue(s.queue);
+        lastQueueSignature = queueSignature;
       }
-      renderFailed(s.failed_items);
-      renderOverview(s);
+      if (logsChanged) scheduleLogRender();
+      const failedSignature = JSON.stringify(s.failed_items || []);
+      if (failedSignature !== lastFailedSignature) {
+        renderFailed(s.failed_items);
+        lastFailedSignature = failedSignature;
+      }
+      const overviewSignature = JSON.stringify([
+        queueSignature, s.running, s.progress, s.message,
+        s.started_at, s.finished_at, s.error,
+      ]);
+      if (overviewSignature !== lastOverviewSignature) {
+        renderOverview(s);
+        lastOverviewSignature = overviewSignature;
+      }
     }
 
     let statusRefreshInFlight = false;
+    let statusPollTimer = 0;
     async function refreshStatus() {
       if (statusRefreshInFlight) return;
       statusRefreshInFlight = true;
       try {
-        const data = await api('/api/status', { timeoutMs: 10000 });
+        const query = new URLSearchParams({
+          logs_after: String(lastLogSeq),
+          log_epoch: String(currentLogEpoch),
+        });
+        const data = await api('/api/status?' + query.toString(), { timeoutMs: 10000 });
         applyStatus(data.status);
       } finally {
         statusRefreshInFlight = false;
       }
+    }
+
+    function scheduleStatusPoll() {
+      clearTimeout(statusPollTimer);
+      const delay = latestStatus?.running ? 1500 : 4000;
+      statusPollTimer = setTimeout(async () => {
+        try {
+          await refreshStatus();
+        } catch (_error) {
+          // A temporary status failure should not stop future refreshes.
+        } finally {
+          scheduleStatusPoll();
+        }
+      }, delay);
     }
 
     function previewCover() {
@@ -3689,8 +3888,8 @@ INDEX_HTML = r"""<!doctype html>
       filterBox.style.marginBottom = '8px';
       filterBox.innerHTML = '<select id="logLevelFilter"><option value="all">全部级别</option><option value="info">信息</option><option value="warning">警告</option><option value="error">错误</option></select><input id="logKeywordFilter" placeholder="筛选日志关键词" />';
       logPanel.insertBefore(filterBox, logPanel.firstChild);
-      document.getElementById('logLevelFilter').onchange = e => { logFilter = e.target.value; renderLogs(latestStatus?.logs || []); };
-      document.getElementById('logKeywordFilter').oninput = e => { logKeyword = e.target.value.trim(); renderLogs(latestStatus?.logs || []); };
+      document.getElementById('logLevelFilter').onchange = e => { logFilter = e.target.value; scheduleLogRender(true); };
+      document.getElementById('logKeywordFilter').oninput = e => { logKeyword = e.target.value.trim(); scheduleLogRender(true); };
     }
 
     initMobileSections();
@@ -3699,6 +3898,7 @@ INDEX_HTML = r"""<!doctype html>
       document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'log') scheduleLogRender(true);
     });
     form.addEventListener('input', e => e.target.classList.remove('field-error'));
     form.addEventListener('change', e => e.target.classList.remove('field-error'));
@@ -3742,7 +3942,7 @@ INDEX_HTML = r"""<!doctype html>
       initCustomSelects();
       await loadConfig();
       await refreshStatus();
-      setInterval(() => refreshStatus().catch(() => {}), 1500);
+      scheduleStatusPoll();
     })().catch(e => toast(e.message));
   </script>
 </body>

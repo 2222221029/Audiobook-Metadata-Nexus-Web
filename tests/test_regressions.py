@@ -6,10 +6,62 @@ from unittest.mock import patch
 
 from metadata_helpers import build_output_folder_name
 from processor import load_operation_snapshot, restore_operation_snapshot, save_operation_snapshot
-from docker_web import INDEX_HTML, collect_tags_and_year_from_payload, collect_ximalaya_app_tags, fetch_api_metadata
+from docker_web import (
+    AppState,
+    INDEX_HTML,
+    collect_tags_and_year_from_payload,
+    collect_ximalaya_app_tags,
+    extract_ximalaya_release_year,
+    fetch_api_metadata,
+    normalize_ximalaya_payload,
+)
 
 
 class RegressionTests(unittest.TestCase):
+    def test_ximalaya_release_year_ignores_track_and_update_timestamps(self):
+        payload = {
+            "albumPageMainInfo": {
+                "albumId": 123,
+                "albumTitle": "历史专辑",
+                "created_at": 1502787165000,
+                "updated_at": 1780000000000,
+            },
+            "data": {
+                "tracks": [
+                    {"trackId": 1, "created_at": 1780000000000, "updated_at": 1780000000000}
+                ]
+            },
+        }
+        self.assertEqual(extract_ximalaya_release_year(payload), "2017")
+        self.assertEqual(normalize_ximalaya_payload(payload)["releaseDate"], "2017")
+
+    def test_status_logs_are_returned_incrementally(self):
+        state = AppState()
+        state.add_log("one")
+        state.add_log("two")
+        first = state.snapshot(logs_after=0, log_epoch=0)
+        self.assertEqual([item["message"] for item in first["logs"]], ["one", "two"])
+        self.assertEqual(first["log_seq"], 2)
+        self.assertFalse(first["logs_reset"])
+
+        state.add_log("three")
+        delta = state.snapshot(logs_after=2, log_epoch=0)
+        self.assertEqual([item["message"] for item in delta["logs"]], ["three"])
+
+        state.reset_for_run(clear_logs=True)
+        reset = state.snapshot(logs_after=3, log_epoch=0)
+        self.assertTrue(reset["logs_reset"])
+        self.assertEqual(reset["logs"], [])
+
+    def test_log_view_uses_bounded_on_demand_rendering(self):
+        self.assertIn("const MAX_CLIENT_LOGS = 1200", INDEX_HTML)
+        self.assertIn("const MAX_RENDERED_LOGS = 600", INDEX_HTML)
+        self.assertIn("document.createDocumentFragment()", INDEX_HTML)
+        self.assertIn("logBox.replaceChildren(fragment)", INDEX_HTML)
+        self.assertIn("logs_after: String(lastLogSeq)", INDEX_HTML)
+        self.assertIn("if (logsChanged) scheduleLogRender()", INDEX_HTML)
+        self.assertNotIn("logSize !== lastLogSize || document.getElementById('panel-log').classList.contains('active')", INDEX_HTML)
+
     def test_native_selects_are_enhanced_with_custom_popovers(self):
         self.assertIn("custom-select-trigger", INDEX_HTML)
         self.assertIn("custom-select-popover", INDEX_HTML)
