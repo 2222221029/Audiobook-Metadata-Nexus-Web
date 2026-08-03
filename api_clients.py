@@ -142,7 +142,7 @@ def get_kuwo_album_desc_from_page(album_id: str) -> str:
     return ""
 
 def get_kuwo_album_info(album_id: str, pn=1, rn=24) -> dict:
-    kuwo_cookie = os.environ.get("KUWO_COOKIE", "").strip()
+    kuwo_cookie = os.environ.get("KUWO_COOKIE", "").strip() or get_platform_cookies().get("kuwo", "").strip()
     cookies = {"Hm_Iuvt_cdb524f42f23cer9b268564v7y735ewrq2324": kuwo_cookie} if kuwo_cookie else {}
     req_id = str(uuid.uuid4()).replace("-", "")
     url = "https://www.kuwo.cn/api/www/album/albumInfo"

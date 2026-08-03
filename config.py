@@ -142,7 +142,7 @@ def check_config():
 
 COOKIE_FILE = os.path.join(BASE_DIR, "platform_cookies.json")
 COOKIE_ENCRYPTED_FILE = os.path.join(BASE_DIR, "platform_cookies.enc")
-COOKIE_KEYS = ("qidian", "netease")
+COOKIE_KEYS = ("qidian", "netease", "kuwo")
 
 def get_platform_cookies():
     encrypted_path = os.path.abspath(COOKIE_ENCRYPTED_FILE)
@@ -155,7 +155,7 @@ def get_platform_cookies():
         if os.path.exists(plain_path):
             return read_plain_cookie_file(plain_path, COOKIE_KEYS)
     except Exception as e: pass
-    return {"qidian": "", "netease": ""}
+    return {"qidian": "", "netease": "", "kuwo": ""}
 
 def set_platform_cookies(cookies_dict):
     encrypted_path = os.path.abspath(COOKIE_ENCRYPTED_FILE)

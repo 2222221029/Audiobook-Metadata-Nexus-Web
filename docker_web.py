@@ -2671,6 +2671,7 @@ INDEX_HTML = r"""<!doctype html>
       <div class="modal-body">
         <label>起点听书 Cookie</label><textarea id="qidianCookie" style="min-height:90px;margin-bottom:12px"></textarea>
         <label>网易云听书 Cookie</label><textarea id="neteaseCookie" style="min-height:90px"></textarea>
+        <label>酷我听书 Cookie（可选）</label><textarea id="kuwoCookie" style="min-height:90px"></textarea>
       </div>
       <div class="modal-foot"><span class="hint">Cookie 会保存到容器配置目录</span><button type="button" class="btn-primary" id="saveCookieBtn">保存 Cookie</button></div>
     </div>
@@ -3863,11 +3864,12 @@ INDEX_HTML = r"""<!doctype html>
       const data = await api('/api/cookies');
       document.getElementById('qidianCookie').value = data.cookies.qidian || '';
       document.getElementById('neteaseCookie').value = data.cookies.netease || '';
+      document.getElementById('kuwoCookie').value = data.cookies.kuwo || '';
       document.getElementById('cookieModal').classList.add('show');
     }
 
     async function saveCookies() {
-      await api('/api/cookies', { method: 'POST', body: JSON.stringify({cookies: {qidian: document.getElementById('qidianCookie').value, netease: document.getElementById('neteaseCookie').value}}) });
+      await api('/api/cookies', { method: 'POST', body: JSON.stringify({cookies: {qidian: document.getElementById('qidianCookie').value, netease: document.getElementById('neteaseCookie').value, kuwo: document.getElementById('kuwoCookie').value}}) });
       document.getElementById('cookieModal').classList.remove('show');
       toast('Cookie 已保存');
     }
