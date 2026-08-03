@@ -186,6 +186,31 @@ def kuwo_api(album_id: str) -> dict:
                 return {"album": name, "pic": cover, "artist": artist, "info": info, "releaseDate": release}
     except Exception:
         pass
+    # Kuwo's search endpoint still returns complete album records even when
+    # both detail endpoints reject the request. Resolve the selected ID there.
+    try:
+        session = get_safe_session()
+        response = session.get(
+            "http://search.kuwo.cn/r.s",
+            params={"pn": 0, "rn": 30, "all": str(album_id).strip(), "ft": "album", "newsearch": 1, "rformat": "json", "encoding": "utf8", "plat": "pc", "pcjson": 1},
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=15,
+        )
+        if response.status_code == 200:
+            for album in (response.json().get("albumlist") or []):
+                if str(album.get("albumid") or album.get("id") or "").strip() != str(album_id).strip():
+                    continue
+                cover = album.get("hts_img") or album.get("img") or album.get("pic") or ""
+                cover = re.sub(r"/([1-9])00/", r"/\g<1>000/", str(cover))
+                return {
+                    "album": album.get("name") or album.get("title") or "",
+                    "pic": cover,
+                    "artist": album.get("artist") or album.get("aartist") or "",
+                    "info": album.get("info") or "",
+                    "releaseDate": str(album.get("pub") or album.get("showtime") or "")[:4],
+                }
+    except Exception:
+        pass
     raw = get_kuwo_album_info(album_id, pn=1, rn=1)
     if not raw: raise Exception("酷我听书API请求失败或无数据返回")
     data = raw.get("data") or {}
