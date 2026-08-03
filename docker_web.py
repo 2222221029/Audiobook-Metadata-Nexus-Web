@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import datetime
 import json
 import logging
@@ -80,12 +81,12 @@ DEFAULT_PARAMS = {
     "subtitle": "",
     "author": "",
     "anchor": "",
-    "category": "401",
-    "platform": "喜马拉雅",
-    "year": "2024",
+    "category": "",
+    "platform": "",
+    "year": "",
     "target_format": "原格式保留",
     "bitrate": "自动检测",
-    "finished": "完结",
+    "finished": "",
     "check_codec": True,
     "rename_ext": True,
     "debug": True,
@@ -1242,8 +1243,8 @@ def file_response(handler, path):
     file_path = Path(path or "").resolve()
     if not file_path.exists() or not file_path.is_file():
         return text_response(handler, "Not Found", "text/plain; charset=utf-8", 404)
-    allowed_root = data_root()
-    if os.path.commonpath([str(file_path), str(allowed_root)]) != str(allowed_root):
+    allowed_roots = [data_root(), default_config_path().parent.resolve()]
+    if not any(os.path.commonpath([str(file_path), str(root)]) == str(root) for root in allowed_roots):
         return text_response(handler, "Forbidden", "text/plain; charset=utf-8", 403)
     content_type = mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
     data = file_path.read_bytes()
@@ -1279,6 +1280,22 @@ def read_json_body(handler):
     if length <= 0:
         return {}
     return json.loads(handler.rfile.read(length).decode("utf-8"))
+
+
+def save_uploaded_cover(payload):
+    data_url = str(payload.get("data") or "")
+    match = re.fullmatch(r"data:(image/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)", data_url, re.IGNORECASE)
+    if not match:
+        raise ValueError("仅支持 JPG、PNG、WEBP 或 GIF 封面图片")
+    raw = base64.b64decode(match.group(2), validate=True)
+    if not raw or len(raw) > 12 * 1024 * 1024:
+        raise ValueError("封面图片不能为空且不能超过 12 MB")
+    extension = {"jpeg": ".jpg", "png": ".png", "webp": ".webp", "gif": ".gif"}[match.group(1).split("/")[-1].lower()]
+    upload_dir = default_config_path().parent / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    target = upload_dir / f"audiometa-cover-{uuid.uuid4().hex}{extension}"
+    target.write_bytes(raw)
+    return str(target)
 
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -1362,6 +1379,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             payload = read_json_body(self)
             if path == "/api/config":
                 return json_response(self, {"ok": True, "params": save_params(payload.get("params", payload))})
+            if path == "/api/cover/upload":
+                return json_response(self, {"ok": True, "path": save_uploaded_cover(payload)})
             if path == "/api/config/import":
                 imported = payload.get("params", payload)
                 if not isinstance(imported, dict):
@@ -2481,7 +2500,7 @@ INDEX_HTML = r"""<!doctype html>
             <div><label>发布平台 *</label><select name="platform"></select></div>
             <div><label>专辑分类 *</label><select name="category"></select></div>
             <div><label>专辑状态 *</label><select name="finished"></select></div>
-            <div><label>发布年份 *</label><input name="year" placeholder="2024" /></div>
+              <div><label>发布年份 *</label><input name="year" placeholder="请输入发布年份" /></div>
             <div class="span-2">
               <label>目标格式与码率</label>
               <div class="format-row"><select name="target_format"></select><select name="bitrate"></select></div>
@@ -2513,6 +2532,8 @@ INDEX_HTML = r"""<!doctype html>
           <label>封面图片（Docker 版支持网络封面或容器内路径）</label>
           <div class="inline" style="margin-bottom:10px">
             <input name="manual_cover_path" placeholder="/data/专辑/cover.jpg 或 https://..." />
+            <input type="file" id="coverFileInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
+            <button type="button" class="quiet-button" id="uploadCoverBtn">从电脑上传</button>
             <button type="button" class="quiet-button" id="previewCoverBtn">预览封面</button>
           </div>
           <div class="cover-row">
@@ -2797,8 +2818,14 @@ INDEX_HTML = r"""<!doctype html>
       }
     }
 
-    function optionList(select, values, formatter = v => ({value: v, label: v})) {
+    function optionList(select, values, formatter = v => ({value: v, label: v}), placeholder = '') {
       select.innerHTML = '';
+      if (placeholder) {
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = placeholder;
+        select.appendChild(empty);
+      }
       values.forEach(v => {
         const item = formatter(v);
         const option = document.createElement('option');
@@ -2992,11 +3019,11 @@ INDEX_HTML = r"""<!doctype html>
       const { options } = await api('/api/options');
       optionList(form.api_source, options.api_sources);
       optionList(form.link_platform, options.link_platforms);
-      optionList(form.platform, options.platforms);
-      optionList(form.category, options.categories, v => ({value: v.id, label: `${v.id} · ${v.name}`}));
+      optionList(form.platform, options.platforms, v => ({value: v, label: v}), '请选择发布平台');
+      optionList(form.category, options.categories, v => ({value: v.id, label: `${v.id} · ${v.name}`}), '请选择专辑分类');
       optionList(form.target_format, options.target_formats);
       optionList(form.bitrate, options.bitrates);
-      optionList(form.finished, options.finished);
+      optionList(form.finished, options.finished, v => ({value: v, label: v}), '请选择专辑状态');
       browseCurrent = options.data_root;
     }
 
@@ -3381,7 +3408,7 @@ INDEX_HTML = r"""<!doctype html>
       form.reset();
       authors = [];
       anchors = [];
-      teams = [];
+      teams = ['RL'];
       seriesList = [];
       tags = [];
       currentRawMetadata = {};
@@ -3784,6 +3811,28 @@ INDEX_HTML = r"""<!doctype html>
       toast(`预览：${p.audio_count} 个音频；输出目录：${p.output_name}${p.output_exists ? '（已存在）' : ''}`);
     }
 
+    async function uploadCoverFromComputer(file) {
+      if (!file) return;
+      if (file.size > 12 * 1024 * 1024) return toast('封面图片不能超过 12 MB');
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const result = await api('/api/cover/upload', {
+            method: 'POST',
+            body: JSON.stringify({ name: file.name, data: reader.result }),
+            timeoutMs: 30000,
+          });
+          form.manual_cover_path.value = result.path || '';
+          previewCover();
+          toast('封面上传成功');
+        } catch (error) {
+          toast(error.message || '封面上传失败');
+        }
+      };
+      reader.onerror = () => toast('无法读取封面文件');
+      reader.readAsDataURL(file);
+    }
+
     async function showHealth() {
       const data = await api('/api/health');
       const h = data.health;
@@ -3921,6 +3970,11 @@ INDEX_HTML = r"""<!doctype html>
     document.getElementById('editQueueBtn').onclick = () => editSelectedQueue();
     document.getElementById('clearQueueBtn').onclick = () => clearQueue().catch(e => toast(e.message));
     document.getElementById('previewCoverBtn').onclick = previewCover;
+    document.getElementById('uploadCoverBtn').onclick = () => document.getElementById('coverFileInput').click();
+    document.getElementById('coverFileInput').addEventListener('change', event => {
+      uploadCoverFromComputer(event.target.files?.[0]);
+      event.target.value = '';
+    });
     document.getElementById('clearBtn').onclick = () => clearAll().catch(e => toast(e.message));
     document.getElementById('failedBtn').onclick = () => document.querySelector('[data-tab="failed"]').click();
     document.getElementById('retryBtn').onclick = () => retryFailedQueue().catch(e => toast(e.message));

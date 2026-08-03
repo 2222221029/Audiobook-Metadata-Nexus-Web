@@ -16,8 +16,20 @@ from docker_web import (
     normalize_ximalaya_payload,
 )
 
+DOCKER_WEB_SOURCE = (Path(__file__).resolve().parents[1] / "docker_web.py").read_text(encoding="utf-8")
+
 
 class RegressionTests(unittest.TestCase):
+    def test_required_metadata_fields_start_empty(self):
+        self.assertIn('"category": ""', DOCKER_WEB_SOURCE)
+        self.assertIn('"platform": ""', DOCKER_WEB_SOURCE)
+        self.assertIn('"year": ""', DOCKER_WEB_SOURCE)
+        self.assertIn('"finished": ""', DOCKER_WEB_SOURCE)
+        self.assertIn('"team": ""', DOCKER_WEB_SOURCE)
+        self.assertIn("'请选择发布平台'", INDEX_HTML)
+        self.assertIn("'请选择专辑分类'", INDEX_HTML)
+        self.assertIn("'请选择专辑状态'", INDEX_HTML)
+
     def test_ximalaya_release_year_ignores_track_and_update_timestamps(self):
         payload = {
             "albumPageMainInfo": {
