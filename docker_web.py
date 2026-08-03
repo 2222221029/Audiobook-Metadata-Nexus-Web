@@ -2038,7 +2038,10 @@ INDEX_HTML = r"""<!doctype html>
     }
     .cover-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
     .cover-meta { margin-top: 5px; color: var(--text-3); font-size: 11px; text-align: center; }
-    .search-results { display: grid; gap: 7px; margin-top: 12px; }
+    .search-results { position: fixed; z-index: 1200; inset: 50% auto auto 50%; transform: translate(-50%, -50%); display: grid; gap: 7px; width: min(680px, calc(100vw - 32px)); max-height: min(620px, calc(100vh - 80px)); overflow: auto; padding: 18px; background: var(--surface); border: 1px solid var(--border-med); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+    .search-results::before { content: '选择搜索结果'; display: block; margin-bottom: 4px; color: var(--text); font-size: 17px; font-weight: 800; }
+    .search-results[hidden] { display: none; }
+    .search-results-backdrop { position: fixed; z-index: 1199; inset: 0; background: rgba(0,0,0,.62); backdrop-filter: blur(3px); }
     .search-result { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; width: 100%; padding: 8px 10px; text-align: left; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; }
     .search-result:hover { border-color: var(--primary); background: var(--primary-bg); }
     .search-result img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; background: var(--surface-3); }
@@ -2485,7 +2488,8 @@ INDEX_HTML = r"""<!doctype html>
               <button type="button" class="btn-green" id="fetchLinkBtn" style="width:100%;min-height:40px">请求链接</button>
             </div>
           </div>
-          <div id="titleSearchResults" class="search-results" hidden></div>
+          <div id="titleSearchBackdrop" class="search-results-backdrop" hidden></div>
+          <div id="titleSearchResults" class="search-results" role="dialog" aria-modal="true" hidden></div>
         </div>
 
         <div class="section">
@@ -3388,8 +3392,9 @@ INDEX_HTML = r"""<!doctype html>
 
     function renderTitleSearchResults(results) {
       const box = document.getElementById('titleSearchResults');
+      const backdrop = document.getElementById('titleSearchBackdrop');
       box.replaceChildren();
-      if (!results.length) { box.hidden = false; box.textContent = '没有找到匹配专辑'; return; }
+      if (!results.length) { box.textContent = '没有找到匹配专辑'; box.hidden = false; backdrop.hidden = false; return; }
       results.forEach(item => {
         const button = document.createElement('button');
         button.type = 'button'; button.className = 'search-result';
@@ -3402,12 +3407,18 @@ INDEX_HTML = r"""<!doctype html>
         button.append(cover, body, pick);
         button.onclick = async () => {
           form.api_id.value = item.id;
-          box.hidden = true;
+          closeTitleSearchResults();
           await fetchMetadata();
         };
         box.appendChild(button);
       });
       box.hidden = false;
+      backdrop.hidden = false;
+    }
+
+    function closeTitleSearchResults() {
+      document.getElementById('titleSearchResults').hidden = true;
+      document.getElementById('titleSearchBackdrop').hidden = true;
     }
 
     async function searchByTitle() {
@@ -4010,6 +4021,10 @@ INDEX_HTML = r"""<!doctype html>
     document.getElementById('loadConfigBtn').onclick = () => loadConfig().catch(e => toast(e.message));
     document.getElementById('fetchBtn').onclick = () => fetchMetadata().catch(e => toast(e.message));
     document.getElementById('searchTitleBtn').onclick = () => searchByTitle().catch(e => toast(e.message));
+    document.getElementById('titleSearchBackdrop').onclick = closeTitleSearchResults;
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeTitleSearchResults();
+    });
     document.getElementById('fetchLinkBtn').onclick = () => fetchLink().catch(e => toast(e.message));
     document.getElementById('addQueueBtn').onclick = () => addQueueFast().catch(e => toast(e.message));
     document.getElementById('startQueueBtn').onclick = () => startQueue().catch(e => toast(e.message));
