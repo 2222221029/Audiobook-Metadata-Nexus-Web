@@ -8,3 +8,4 @@ process_params.json
 docker/config/
 docker/data/
 .env
+platform-credentials.env
