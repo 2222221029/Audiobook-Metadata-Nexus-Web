@@ -699,7 +699,7 @@ def _fanqie_tags(value):
 
 
 def _fanqie_cover(data):
-    for key in ("thumb_url", "audio_thumb_uri", "audio_thumb_url_hd", "audio_thumb_url", "horiz_thumb_url", "cover", "cover_url", "image_url"):
+    for key in ("audio_thumb_uri_webp", "audio_thumb_uri", "audio_thumb_url_hd", "audio_thumb_url", "thumb_url", "horiz_thumb_url", "cover", "cover_url", "image_url"):
         value = data.get(key)
         if isinstance(value, dict):
             value = value.get("url") or value.get("uri") or value.get("url_list", [""])[0]
@@ -764,6 +764,23 @@ def fetch_fanqie_api_metadata_from_share_html(html, share_url):
     return {}
 
 
+def merge_fanqie_metadata(base, extra):
+    """Merge partial metadata without letting an empty fallback erase valid fields."""
+    result = dict(base or {})
+    for key, value in (extra or {}).items():
+        if value not in (None, "", [], {}):
+            if key == "tags":
+                result[key] = list(dict.fromkeys((result.get(key) or []) + list(value)))
+            elif result.get(key) in (None, "", [], {}):
+                result[key] = value
+    return result
+
+
+def fanqie_metadata_incomplete(data):
+    data = data or {}
+    return any(not data.get(key) for key in ("title", "author", "cover", "desc", "tags", "finished"))
+
+
 def run_async_task(coro):
     try:
         asyncio.get_running_loop()
@@ -803,7 +820,7 @@ async def fetch_fanqie_rendered_metadata_async(share_url):
       var imgEl = document.querySelector('.book-meta-new-img');
       if (imgEl && imgEl.src) cover = imgEl.src;
       if (!cover) {
-        var og = document.querySelector('meta[property="og:image"]');
+        var og = document.querySelector('meta[name="og:image"], meta[property="og:image"]');
         if (og && og.getAttribute('content')) cover = og.getAttribute('content');
       }
       return cover;
@@ -883,8 +900,8 @@ async def fetch_fanqie_rendered_metadata_async(share_url):
       var yearMatch = allText.match(/(?:出版|发布|上线|创建)[^\d]{0,8}((?:19|20)\d{2})/);
       if (yearMatch) releaseDate = yearMatch[1];
 
-      if (!title) { var ogTitle = document.querySelector('meta[property="og:title"]'); if (ogTitle && ogTitle.getAttribute('content')) title = ogTitle.getAttribute('content'); }
-      if (!cover) { var ogImage = document.querySelector('meta[property="og:image"]'); if (ogImage && ogImage.getAttribute('content')) cover = ogImage.getAttribute('content'); }
+      if (!title) { var ogTitle = document.querySelector('meta[name="og:title"], meta[property="og:title"]'); if (ogTitle && ogTitle.getAttribute('content')) title = ogTitle.getAttribute('content'); }
+      if (!cover) { var ogImage = document.querySelector('meta[name="og:image"], meta[property="og:image"]'); if (ogImage && ogImage.getAttribute('content')) cover = ogImage.getAttribute('content'); }
       if (title === '\u756a\u8304\u7545\u542c') title = '';
       return { title: title, author: author, cover: cover, desc: desc, category: category, finished: finished, tags: tags, releaseDate: releaseDate };
     })();
@@ -969,14 +986,12 @@ def fetch_link_metadata(url, platform):
     else:
         if html:
             data = parse_fanqie_share_html(html, url)
-            if not data or not data.get("title"):
-                static_api_data = fetch_fanqie_api_metadata_from_share_html(html, url)
-                if static_api_data:
-                    data = static_api_data
-        if not data or not data.get("title"):
+            static_api_data = fetch_fanqie_api_metadata_from_share_html(html, url)
+            data = merge_fanqie_metadata(data, static_api_data)
+        # A title-only SSR result is not success. Render the page to fill all remaining fields.
+        if fanqie_metadata_incomplete(data):
             rendered_data = fetch_fanqie_rendered_metadata(url)
-            if rendered_data:
-                data = rendered_data
+            data = merge_fanqie_metadata(data, rendered_data)
         if data and not data.get("title"):
             data = {}
     if not data:
@@ -2161,8 +2176,11 @@ INDEX_HTML = r"""<!doctype html>
     .search-result-meta { margin-top: 3px; color: var(--text-3); font-size: 12px; }
     .search-pagination { display:flex; justify-content:space-between; gap:8px; margin-top:10px; }
     .source-action { display:flex; flex-direction:column; justify-content:flex-end; }
-    .action-stack { display:grid; gap:8px; }
-    .source-action button { width:100%; min-height:46px; }
+    .action-stack { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
+    .source-action button { width:100%; min-height:46px; border-radius:12px; }
+    .source-action .btn-primary { box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 20%, transparent); }
+    .source-action .quiet-button { background: color-mix(in srgb, var(--surface-2) 82%, var(--primary) 18%); border-color: color-mix(in srgb, var(--primary) 20%, var(--border)); }
+    .source-action .quiet-button:hover { background: var(--primary-bg); border-color: color-mix(in srgb, var(--primary) 48%, var(--border)); }
     .cover-actions { display:flex; gap:8px; flex:0 0 auto; }
     .cover-actions button { min-width:112px; min-height:44px; }
     @media (max-width: 720px) {
@@ -2487,6 +2505,7 @@ INDEX_HTML = r"""<!doctype html>
       #panel-log { min-height: 55vh; }
       .log { min-height: 55vh; max-height: 62vh; }
       .field-row, .format-row, .series-inline, .inline { grid-template-columns: 1fr; }
+      .action-stack { grid-template-columns: 1fr 1fr; }
       .inline button { width: 100%; }
       input, select, textarea, .custom-select-trigger { min-height: 42px; font-size: 15px; }
       .cover-row { grid-template-columns: 1fr; }
@@ -2595,7 +2614,7 @@ INDEX_HTML = r"""<!doctype html>
           <div class="grid" style="margin-top:10px">
             <div>
               <label>平台专辑 ID / 书名 / 分享链接（可选）</label>
-              <div class="field-row"><select name="api_source"></select><input name="api_id" placeholder="输入专辑 ID、书名或分享链接 URL" /></div>
+              <div class="field-row source-input-row"><select name="api_source"></select><input name="api_id" placeholder="输入 ID、书名或分享链接 URL" /></div>
             </div>
             <div class="source-action">
               <label>&nbsp;</label>

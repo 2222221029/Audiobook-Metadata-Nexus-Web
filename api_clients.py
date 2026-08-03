@@ -291,7 +291,7 @@ def parse_novelfm_share_response(data: dict) -> dict:
     title = (api_book.get("book_name") or api_book.get("title") or "").strip()
     if not title: return {}
     author = (api_book.get("author") or "").strip()
-    cover = api_book.get("thumb_url") or api_book.get("audio_thumb_uri") or ""
+    cover = api_book.get("audio_thumb_uri_webp") or api_book.get("audio_thumb_uri") or api_book.get("thumb_url") or ""
     desc = (api_book.get("abstract") or "").strip()
     tags_str = api_book.get("tags") or ""
     tags = [t.strip() for t in tags_str.split(",") if t.strip()] if isinstance(tags_str, str) else []

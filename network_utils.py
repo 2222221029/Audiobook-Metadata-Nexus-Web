@@ -2,6 +2,8 @@
 import sys
 import ssl
 import re
+import json
+import html as html_lib
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.ssl_ import create_urllib3_context
@@ -135,6 +137,56 @@ def parse_qidian_share_html(html: str, page_url: str = "") -> dict:
 def parse_fanqie_share_html(html: str, page_url: str = "") -> dict:
     out = {}
     try:
+        # 新版 /ug-ssr/pages/book-share 将完整专辑数据放在路由状态中。
+        # 直接解析该 JSON 比重放带签名的接口稳定，也不依赖 Chromium。
+        router_match = re.search(r'window\._ROUTER_DATA\s*=\s*(\{[\s\S]*?\})\s*;?\s*</script>', html, re.IGNORECASE)
+        if router_match:
+            try:
+                router_data = json.loads(html_lib.unescape(router_match.group(1)))
+                page_data = ((((router_data.get("loaderData") or {}).get("book-share_page") or {}).get("pageData")) or {})
+                book = page_data.get("api_book_info") or page_data.get("book_info") or {}
+                if isinstance(book, dict):
+                    title = str(book.get("book_name") or book.get("name") or book.get("title") or "").strip()
+                    if title:
+                        tags_raw = book.get("tags") or book.get("tag_list") or []
+                        if isinstance(tags_raw, str):
+                            tags = [part.strip() for part in re.split(r"[,，、|]", tags_raw) if part.strip()]
+                        elif isinstance(tags_raw, list):
+                            tags = [str(item.get("name") or item.get("tag_name") or "").strip() if isinstance(item, dict) else str(item).strip() for item in tags_raw]
+                        else:
+                            tags = []
+                        cover = (
+                            page_data.get("audio_thumb_uri_webp")
+                            or book.get("audio_thumb_uri_webp")
+                            or book.get("audio_thumb_uri")
+                            or book.get("thumb_url")
+                            or ""
+                        )
+                        creation_status = book.get("creation_status")
+                        finished = "完结" if str(creation_status) == "0" else "连载" if creation_status is not None else ""
+                        category = str(book.get("category_info") or book.get("genre") or (tags[0] if tags else "")).strip()
+                        out = {
+                            "title": title,
+                            "name": title,
+                            "album": title,
+                            "author": str(book.get("author") or "").strip(),
+                            "desc": str(book.get("abstract") or book.get("description") or "").strip(),
+                            "info": str(book.get("abstract") or book.get("description") or "").strip(),
+                            "cover": str(cover).strip().replace("http://", "https://"),
+                            "bestCover": str(cover).strip().replace("http://", "https://"),
+                            "pic": str(cover).strip().replace("http://", "https://"),
+                            "category": category,
+                            "finished": finished,
+                            "tags": list(dict.fromkeys(tag for tag in tags if tag)),
+                            "chapter_count": book.get("serial_count") or book.get("audio_serial_count") or "",
+                            "score": book.get("score") or "",
+                            "play_num": book.get("play_num") or "",
+                            "releaseDate": str(book.get("create_time") or "")[:4],
+                        }
+                        return out
+            except (TypeError, ValueError, json.JSONDecodeError) as exc:
+                _debug_log(f"[番茄分享页 ROUTER_DATA] 解析失败，继续旧版兜底: {exc}")
+
         for pattern in [
             r'<script[^>]*>[\s\S]*?["\'](?:api_book_info|book_name|book_id)["\'][\s\S]*?</script>',
             r'window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});',
