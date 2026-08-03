@@ -5,6 +5,7 @@ import json
 import time
 import uuid
 import codecs
+import html
 import requests
 from config import get_platform_cookies, FANQIE_SHARE_ID, FANQIE_X_BOGUS, FANQIE_SIGNATURE
 from network_utils import get_safe_session, _debug_log, clean_html_tags
@@ -482,6 +483,32 @@ def search_platform_metadata(platform: str, keyword: str, limit: int = 12) -> li
         data = session.get("http://search.kuwo.cn/r.s", params={"pn": 0, "rn": limit, "all": keyword, "ft": "album", "newsearch": 1, "rformat": "json", "encoding": "utf8", "plat": "pc", "pcjson": 1}, headers=headers, timeout=20).json()
         for item in data.get("albumlist") or data.get("abslist") or []:
             add(item.get("albumid") or item.get("id"), item.get("name"), item.get("artist") or item.get("aartist"), item.get("hts_img") or item.get("img"), item.get("info"))
+    elif platform == "网易云听书":
+        data = session.get("https://music.163.com/api/search/get", params={"s": keyword, "type": 1009, "limit": limit, "offset": 0}, headers={**headers, "Referer": "https://music.163.com/"}, timeout=20).json()
+        for item in ((data.get("result") or {}).get("djRadios") or []):
+            dj = (item.get("dj") or {}).get("nickname") if isinstance(item.get("dj"), dict) else ""
+            cover = item.get("picUrl") or item.get("pic_url") or ""
+            add(item.get("id"), item.get("name"), dj, cover, item.get("desc"), [x for x in (item.get("category"), item.get("secondCategory")) if x])
+    elif platform == "懒人听书":
+        from urllib.parse import quote
+        page = session.get(f"https://www.lrts.me/search/book/{quote(keyword)}", headers={**headers, "Referer": "https://www.lrts.me/"}, timeout=20).text
+        for block in re.findall(r'<li class="book-item"[^>]*>([\s\S]*?)</li>', page):
+            match = re.search(r'<a href="/book/(\d+)"', block)
+            title = re.search(r'<a class="book-item-name"[^>]*>([\s\S]*?)</a>', block)
+            cover = re.search(r'<img[^>]*src="([^"]+)"', block)
+            intro = re.search(r'<p class="book-item-desc weaken">([\s\S]*?)</p>', block)
+            if match and title:
+                clean = lambda value: html.unescape(re.sub(r"<[^>]+>", " ", value)).strip()
+                add(match.group(1), clean(title.group(1)), "", cover.group(1) if cover else "", clean(intro.group(1)) if intro else "")
+    elif platform == "蜻蜓fm":
+        graphql = '{ searchResultsPage(keyword:"%s", page:1, include:"channel_ondemand" ) { searchData, numFound } }' % keyword.replace('"', '\\"')
+        data = session.post("https://webbff.qtfm.cn/www", json={"query": graphql}, headers=headers, timeout=20).json()
+        page = ((data.get("data") or {}).get("searchResultsPage") or {})
+        search_data = page.get("searchData") or []
+        if isinstance(search_data, dict): search_data = search_data.get("items") or []
+        for item in search_data:
+            cover = str(item.get("cover") or "").split("!")[0]
+            add(item.get("id"), item.get("title"), item.get("podcaster"), cover, item.get("description"))
     else:
         raise ValueError(f"{platform} 暂未接入书名搜索接口")
     return results[:limit]
