@@ -2862,6 +2862,571 @@ INDEX_HTML = r"""<!doctype html>
       .right-commandbar .ha-process { grid-template-columns: 1fr; }
       .settings-actions { grid-template-columns: 1fr; }
     }
+
+    /* ══════════════════════════════════════════════
+       DARK CONSOLE — PREVIEW MATCH
+       ══════════════════════════════════════════════ */
+    html[data-theme="dark"] {
+      --bg: #030b16;
+      --surface: #081525;
+      --surface-2: #0c1a2c;
+      --surface-3: #122238;
+      --glass: rgba(151,169,201,.045);
+      --border: #192a40;
+      --border-med: #253a55;
+      --border-strong: #385273;
+      --text: #eef3fb;
+      --text-2: #a9b5ca;
+      --text-3: #6f7f99;
+      --primary: #7258f5;
+      --primary-light: #9a82ff;
+      --primary-glow: rgba(114,88,245,.24);
+      --primary-bg: rgba(114,88,245,.13);
+      --success: #38d68c;
+      --success-bg: rgba(29,186,116,.13);
+      --danger: #f14343;
+      --danger-bg: rgba(241,67,67,.12);
+      --warning: #f2b84b;
+      --input-bg: #071321;
+      --log-bg: #061221;
+      --log-text: #b8c3d8;
+    }
+    html[data-theme="dark"] body {
+      background:
+        radial-gradient(900px 520px at 13% 9%, rgba(35,74,119,.13), transparent 68%),
+        radial-gradient(760px 520px at 82% 104%, rgba(59,46,133,.10), transparent 72%),
+        var(--bg);
+    }
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(650px, 1.03fr) minmax(610px, .97fr);
+      grid-template-rows: 74px minmax(0, 1fr);
+      gap: 10px;
+      padding: 0 16px 16px;
+      background: transparent;
+    }
+    .global-topbar {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      height: 74px;
+      margin: 0 -16px;
+      padding: 0 22px;
+      background: rgba(3,11,22,.96);
+      border: 0;
+      border-bottom: 1px solid #17283c;
+      box-shadow: 0 8px 28px rgba(0,0,0,.22);
+      backdrop-filter: blur(18px);
+    }
+    .topbar-brand { gap: 13px; }
+    .brand-mark {
+      width: 47px;
+      height: 47px;
+      flex: 0 0 47px;
+      padding: 2px;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      transform: none;
+    }
+    .brand-mark::before, .brand-mark::after, .brand-mark span { display: none; }
+    .brand-mark svg { width: 100%; height: 100%; overflow: visible; }
+    .brand-mark svg path {
+      fill: none;
+      stroke: #7464f6;
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: .92;
+    }
+    .brand-mark svg path:nth-child(2) { stroke: #8a77ff; }
+    .brand-mark svg path:nth-child(3) { stroke: #5e78ec; }
+    .brand-mark svg circle { fill: #a493ff; }
+    .app-title { display: block; }
+    .brand-line { gap: 20px; }
+    .brand-line h1 {
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 820;
+      letter-spacing: -.045em;
+      background: none;
+      color: var(--text);
+      -webkit-text-fill-color: currentColor;
+    }
+    .brand-divider { height: 28px; background: #26364d; }
+    .brand-line .app-subtitle {
+      color: #aeb9ce;
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: .015em;
+      text-transform: uppercase;
+    }
+    .brand-caption { display: none; }
+    .topbar-controls { gap: 16px; }
+    .topbar-config-actions { display: none; }
+    .theme-cluster { display: flex; align-items: center; gap: 10px; }
+    .theme-symbol { color: #a7b0c3; font-size: 22px; line-height: 1; }
+    .theme-toggle {
+      position: relative;
+      width: 43px;
+      height: 22px;
+      min-height: 22px;
+      padding: 0;
+      border: 0;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #344bb4, #7561ed);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      transform: none;
+    }
+    .theme-toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 22px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #e7ebf6;
+      box-shadow: 0 1px 5px rgba(0,0,0,.45);
+      transition: left .18s ease;
+    }
+    html[data-theme="light"] .theme-toggle::after { left: 3px; }
+    .theme-toggle:hover:not(:disabled) { transform: none; background: linear-gradient(90deg, #4059c2, #826df3); }
+    .topbar-separator { width: 1px; height: 34px; background: #203149; }
+    .global-topbar .status-card {
+      min-width: 380px;
+      display: grid;
+      grid-template-columns: auto 36px minmax(120px, 1fr) 38px 7px;
+      align-items: center;
+      gap: 12px;
+      padding: 0;
+      border: 0;
+    }
+    .queue-state-label, .queue-count {
+      color: #aeb8cb;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .global-topbar .percent {
+      min-width: 36px;
+      color: #d8deea;
+      font-size: 14px;
+      font-weight: 650;
+      text-align: left;
+      background: none;
+      -webkit-text-fill-color: currentColor;
+    }
+    .header-progress { height: 12px; background: #182538; border-radius: 99px; }
+    .progress-bar { background: linear-gradient(90deg, #7260ed, #8666ff); animation: none; }
+    .global-topbar .state-dot { grid-column: 5; grid-row: 1; }
+    .topbar-icon-button {
+      width: 38px;
+      height: 38px;
+      min-height: 38px;
+      padding: 0;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #b9c2d4;
+      font-size: 22px;
+      box-shadow: none;
+    }
+
+    .left {
+      grid-column: 1;
+      grid-row: 2;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+    .workspace-heading[hidden] { display: none; }
+    .form-scroll { padding: 0 6px 14px 0; }
+    .section {
+      margin: 0 0 10px;
+      padding: 16px;
+      border: 1px solid #20334c;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(12,28,47,.98), rgba(8,21,37,.98));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
+      transition: border-color .18s ease, background .18s ease;
+    }
+    .section:hover {
+      border-color: #2c4564;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+    }
+    .section-title {
+      gap: 10px;
+      margin-bottom: 15px;
+      color: #edf2fa;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .section-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 0;
+      background: transparent !important;
+      color: #b9c5d9 !important;
+      font-size: 18px;
+    }
+    label {
+      margin-bottom: 6px;
+      color: #aeb9cd;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .005em;
+      text-transform: none;
+    }
+    input, select, textarea, .custom-select-trigger, .chips {
+      border-color: #29405d;
+      border-radius: 6px;
+      background-color: #071422;
+      color: #e8edf7;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.18);
+    }
+    input, select, .custom-select-trigger { min-height: 44px; padding: 9px 13px; font-size: 14px; }
+    input::placeholder, textarea::placeholder { color: #65748d; }
+    .custom-select-trigger:hover:not(:disabled) { background: #0d1d30; border-color: #395575; }
+    .source-section { min-height: 178px; }
+    .source-directory { grid-template-columns: minmax(0, 1fr) 112px; gap: 10px; }
+    .source-directory button { min-height: 44px; }
+    .source-query { margin-top: 12px; }
+    .source-controls {
+      grid-template-columns: minmax(145px, .82fr) minmax(230px, 1.55fr) minmax(125px, .82fr) minmax(125px, .82fr);
+      gap: 10px;
+    }
+    .source-controls > .custom-select, .source-controls > input, .source-controls > button { min-height: 44px; }
+    .source-controls > button { border-radius: 6px; font-size: 13px; }
+    .source-controls .btn-primary, .cover-actions .btn-primary {
+      background: linear-gradient(135deg, #7659ef, #6a50d8);
+      border-color: #8068ef;
+      box-shadow: 0 4px 14px rgba(100,73,222,.20);
+    }
+    .source-controls .quiet-button { background: transparent; border-color: #745ee0; color: #a992ff; }
+
+    .metadata-section { min-height: 229px; }
+    .metadata-title-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-bottom: 14px; }
+    .metadata-title-field { display: grid; grid-template-columns: 68px minmax(0, 1fr); align-items: center; gap: 10px; }
+    .metadata-title-field label { margin: 0; color: #d5dce9; }
+    .entity-row {
+      display: grid;
+      grid-template-columns: 68px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      margin-top: 11px;
+    }
+    .entity-row > label { margin: 0; color: #d5dce9; }
+    .entity-row > input[type="hidden"] { display: none; }
+    .chips { min-height: 44px; padding: 6px 9px; }
+    .chip { height: 30px; min-height: 30px; padding: 0 9px 0 12px; border-radius: 5px; background: #1a2a40 !important; }
+    .chip > button { color: #b5c0d2; }
+    .field-mini-action {
+      min-height: 44px;
+      padding: 0 14px;
+      border-radius: 6px;
+      background: transparent;
+      border-color: #6f5cce;
+      color: #a891ff;
+    }
+    .entity-hint { width: 142px; color: #65758f; font-size: 11px; text-align: center; }
+
+    .archive-section { min-height: 298px; }
+    .archive-main-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px 18px;
+    }
+    .archive-main-grid > div {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+    }
+    .archive-main-grid label { margin: 0; color: #d5dce9; }
+    .archive-extra-grid {
+      display: grid;
+      grid-template-columns: minmax(170px, .75fr) minmax(0, 1.55fr);
+      gap: 12px 16px;
+      margin-top: 15px;
+      padding-top: 14px;
+      border-top: 1px solid #1d3048;
+    }
+    .tag-archive { grid-column: 1 / -1; }
+    .series-inline { grid-template-columns: minmax(0, 1fr) auto; }
+    .series-inline button { min-height: 44px; border-radius: 6px; }
+    #tagPool { min-height: 40px; }
+    #tagInput { min-height: 38px; }
+
+    .visual-section { min-height: 304px; }
+    .cover-row { grid-template-columns: 192px minmax(0, 1fr); gap: 22px; }
+    .cover-preview-column { min-width: 0; }
+    .cover-box {
+      position: relative;
+      width: 192px;
+      height: 228px;
+      border-radius: 7px;
+      border-color: #31465f;
+      background: #0c1929;
+    }
+    .cover-box img { object-fit: cover; }
+    .cover-change-button {
+      position: absolute;
+      left: 50%;
+      bottom: 12px;
+      z-index: 2;
+      min-height: 36px;
+      padding: 0 14px;
+      transform: translateX(-50%);
+      border-color: rgba(255,255,255,.22);
+      background: rgba(5,12,22,.78);
+      color: #e8edf7;
+      backdrop-filter: blur(8px);
+    }
+    .cover-change-button:hover:not(:disabled) { transform: translateX(-50%); }
+    .cover-meta { color: #63728b; }
+    .visual-content-column { min-width: 0; }
+    .cover-toolbar { display: flex; min-height: 44px; margin-bottom: 16px; }
+    .cover-toolbar > input[name="manual_cover_path"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      min-height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .cover-actions { gap: 12px; }
+    .cover-actions button { min-width: 145px; min-height: 44px; border-radius: 6px; }
+    .visual-content-column textarea { min-height: 145px; height: 145px; padding: 13px 16px; line-height: 1.72; resize: vertical; }
+
+    .right {
+      grid-column: 2;
+      grid-row: 2;
+      display: grid;
+      grid-template-rows: minmax(490px, 1.72fr) minmax(245px, 1fr);
+      gap: 10px;
+      min-height: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+    .queue-console, .live-log-card {
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid #1d3048;
+      border-radius: 8px;
+      background: linear-gradient(145deg, rgba(10,25,43,.98), rgba(6,18,32,.98));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.015);
+    }
+    .queue-console { display: flex; flex-direction: column; }
+    .tabs {
+      height: 61px;
+      flex: 0 0 61px;
+      gap: 10px;
+      padding: 0 23px;
+      border: 0;
+      border-bottom: 1px solid #1d3048;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .tab {
+      min-height: 61px;
+      padding: 0 12px;
+      border-radius: 0;
+      border-bottom: 2px solid transparent;
+      color: #aab5c9;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .tab.active { color: #f0f3fa; border-bottom-color: #8d73ff; background: transparent; }
+    .tab:hover:not(:disabled) { background: transparent; color: #eef2f9; }
+    .overview-tab { display: none; }
+    .queue-console > .tab-panel {
+      flex: 1;
+      min-height: 0;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .queue-actions { display: none; }
+    .queue-actions.has-selection {
+      position: absolute;
+      right: 18px;
+      bottom: 76px;
+      z-index: 4;
+      display: flex;
+      margin: 0;
+      padding: 7px;
+      border: 1px solid #2a405d;
+      border-radius: 7px;
+      background: rgba(6,18,32,.94);
+      box-shadow: 0 12px 28px rgba(0,0,0,.38);
+      backdrop-filter: blur(12px);
+    }
+    .queue-actions.has-selection button { min-height: 32px; box-shadow: none; }
+    #panel-queue { position: relative; }
+    .table-wrap {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+    .queue-console table { min-width: 670px; }
+    .queue-console th {
+      height: 49px;
+      padding: 0 10px;
+      border-bottom: 1px solid #263b55;
+      background: rgba(15,31,51,.72);
+      color: #8190a9;
+      font-size: 12px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .queue-console td {
+      height: 53px;
+      padding: 0 10px;
+      border-bottom: 1px solid #1d3048;
+      color: #d5dce8;
+      font-size: 13px;
+    }
+    .queue-console tbody tr:nth-child(even) td { background: transparent; }
+    .queue-console tbody tr.selected td { background: rgba(114,88,245,.10) !important; }
+    .queue-console th:nth-child(1), .queue-console td:nth-child(1) { width: 34px; }
+    .queue-console th:nth-child(2) { width: 38%; }
+    .queue-console th:nth-child(3) { width: 19%; }
+    .queue-console th:nth-child(4) { width: 22%; }
+    .queue-console th:nth-child(5) { width: 15%; }
+    .queue-platform { display: inline-flex; align-items: center; gap: 7px; color: #d3dae7; }
+    .queue-platform-icon {
+      display: grid;
+      place-items: center;
+      width: 19px;
+      height: 19px;
+      border-radius: 5px;
+      background: #ff552e;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .queue-progress { display: flex; flex-direction: column; gap: 5px; min-width: 90px; }
+    .queue-progress > span { color: #cfd6e3; font-size: 11px; }
+    .queue-progress-track { display: block; width: 100%; height: 4px; overflow: hidden; border-radius: 99px; background: #223149; }
+    .queue-progress-track i { display: block; height: 100%; border-radius: inherit; background: #8d72ff; }
+    .queue-progress.done .queue-progress-track i { background: #3ed38a; }
+    .queue-row-actions { display: inline-flex; gap: 5px; }
+    .queue-row-actions button { width: 28px; height: 28px; min-height: 28px; padding: 0; border: 0; background: transparent; color: #9eacc1; box-shadow: none; }
+    .status-badge { min-height: 26px; padding: 0 11px; border: 0 !important; }
+    .status-badge::before { display: none; }
+    .status-badge.pending { background: #18273b; color: #aab5c8; }
+    .status-badge.processing { background: #102e59; color: #6da7ff; animation: none; }
+    .status-badge.done { background: #0d3b31; color: #43dc91; }
+    .right-commandbar {
+      min-height: 68px;
+      flex: 0 0 68px;
+      margin-top: 0;
+      padding: 10px 15px;
+      border: 0;
+      border-top: 1px solid #1d3048;
+      border-radius: 0;
+      background: rgba(6,17,30,.66);
+      box-shadow: none;
+    }
+    .selection-copy { color: #8795ac; font-size: 13px; }
+    .right-commandbar .ha-process { display: flex; flex: 0 0 auto; gap: 12px; }
+    .right-commandbar .ha-process button { min-width: 130px; min-height: 45px; border-radius: 6px; font-size: 13px; }
+    #addQueueBtn { background: transparent; border-color: #765fe1; color: #aa94ff; }
+    #startQueueBtn { background: rgba(48,87,173,.28); border-color: #4f7ada; color: #7ea8ff; box-shadow: none; }
+    #stopBtn { background: rgba(188,29,36,.38); border-color: #ef343d; color: #ffb0b4; box-shadow: none; }
+
+    .live-log-card { display: flex; flex-direction: column; }
+    .live-log-head {
+      height: 55px;
+      flex: 0 0 55px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px 0 17px;
+      border-bottom: 1px solid #1d3048;
+      color: #edf1f8;
+    }
+    .live-log-head strong { font-size: 14px; }
+    .live-log-head button { min-height: 34px; padding: 0 12px; background: transparent; }
+    .live-log-card #panel-log, .live-log-card #panel-log.active {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      padding: 9px 10px 10px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    #logFilterBox { display: none !important; }
+    .log {
+      padding: 10px 12px;
+      border-color: #1d3048;
+      border-radius: 6px;
+      background: #061321;
+      color: #aeb9cc;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    html[data-theme="dark"] .log-line.info { color: #66a4ff; }
+    html[data-theme="dark"] .log-line.warning { color: #f0c359; }
+    html[data-theme="dark"] .log-line.error { color: #ff777d; }
+
+    @media (max-width: 1500px) and (min-width: 1181px) {
+      .app { grid-template-columns: minmax(620px, 1.03fr) minmax(560px, .97fr); }
+      .brand-line h1 { font-size: 24px; }
+      .brand-line .app-subtitle { font-size: 14px; }
+      .global-topbar .status-card { min-width: 310px; grid-template-columns: auto 34px minmax(90px, 1fr) 34px 7px; gap: 9px; }
+      .source-controls { grid-template-columns: minmax(140px, .78fr) minmax(0, 1.22fr); }
+      .source-controls > button:nth-of-type(1) { grid-column: 1; }
+      .source-controls > button:nth-of-type(2) { grid-column: 2; }
+      .right-commandbar .ha-process button { min-width: 108px; }
+    }
+    @media (max-width: 1180px) {
+      body { overflow: auto; }
+      .app { height: auto; min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: 74px auto minmax(760px, 100vh); }
+      .global-topbar { grid-column: 1; grid-row: 1; }
+      .left { grid-column: 1; grid-row: 2; overflow: visible; }
+      .right { grid-column: 1; grid-row: 3; min-height: 760px; }
+      .form-scroll { overflow: visible; }
+      .source-controls { grid-template-columns: minmax(145px, .75fr) minmax(0, 1.35fr) repeat(2, minmax(130px, .8fr)); }
+    }
+    @media (max-width: 760px) {
+      .app { display: flex; flex-direction: column; min-width: 0; padding: 0 10px 12px; }
+      .global-topbar { position: static; width: calc(100% + 20px); height: auto; margin: 0 -10px; padding: 12px; flex-direction: column; align-items: stretch; }
+      .topbar-brand { width: 100%; }
+      .brand-mark { width: 38px; height: 38px; flex-basis: 38px; }
+      .brand-line h1 { font-size: 22px; }
+      .brand-divider, .brand-line .app-subtitle { display: none; }
+      .topbar-controls { width: 100%; justify-content: space-between; gap: 10px; }
+      .global-topbar .status-card { min-width: 0; flex: 1; grid-template-columns: auto 32px minmax(55px, 1fr) 34px 7px; gap: 7px; }
+      .theme-symbol { display: none; }
+      .topbar-separator { display: none; }
+      .left, .right { width: 100%; }
+      .source-controls, .metadata-title-grid, .archive-main-grid, .archive-extra-grid { grid-template-columns: 1fr; }
+      .source-controls > button:nth-of-type(1), .source-controls > button:nth-of-type(2) { grid-column: auto; }
+      .metadata-title-field, .entity-row, .archive-main-grid > div { grid-template-columns: 1fr; }
+      .entity-row > label, .metadata-title-field label, .archive-main-grid label { margin-bottom: 4px; }
+      .entity-hint { display: none; }
+      .tag-archive { grid-column: auto; }
+      .cover-row { grid-template-columns: 1fr; }
+      .cover-box { width: min(100%, 220px); height: 220px; margin: 0 auto; }
+      .cover-actions { width: 100%; }
+      .cover-actions button { flex: 1; min-width: 0; }
+      .right { display: grid; grid-template-rows: minmax(520px, 1.5fr) minmax(280px, 1fr); min-height: 840px; }
+      .tabs { overflow-x: auto; }
+      .right-commandbar { align-items: stretch; flex-direction: column; min-height: 0; flex-basis: auto; }
+      .right-commandbar .ha-process { display: grid; width: 100%; grid-template-columns: 1fr; }
+      .right-commandbar .ha-process button { width: 100%; min-width: 0; }
+      .queue-console table { min-width: 620px; }
+      .settings-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -2869,54 +3434,63 @@ INDEX_HTML = r"""<!doctype html>
     <!-- ── Global Top Bar ─────────────────────────── -->
     <header class="global-topbar">
       <div class="topbar-brand">
-        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" focusable="false">
+            <path d="M24 6c8.7 0 15.8 5.2 18.9 12.5-5.9-3.3-12.7-3.2-17.7.3-4.8 3.4-7 9.1-5.6 14.4C12.4 31.4 7 25 7 17.4 11.4 10.4 17 6 24 6Z"/>
+            <path d="M40.8 20.9c4.3 7.5 2.9 16.2-2.2 22-1.1-6.7-4.6-12.5-10.2-14.8-5.4-2.2-11.4-.8-15.3 3.1-1.9-7.2 1-14.9 7.5-18.7 8.3-.2 16.7 2.2 20.2 8.4Z"/>
+            <path d="M35.9 40.8c-4.4 7.5-12.8 10.8-20.5 9.3 5.7-3.8 9.1-9.6 8.4-15.6-.7-5.8-4.7-10.3-10-11.7 5.3-5.3 13.4-6.5 19.9-2.7 4.1 7.2 5.7 15.2 2.2 20.7Z"/>
+            <circle cx="24" cy="24" r="4.2"/>
+          </svg>
+        </span>
         <div class="app-title">
-          <div class="brand-line"><h1>声境元枢</h1><span class="brand-divider"></span><span class="app-subtitle">AudioMeta Nexus · 有声书元数据处理</span></div>
-          <span class="brand-caption">Audiobook metadata workspace</span>
+          <div class="brand-line"><h1>声境元枢</h1><span class="brand-divider"></span><span class="app-subtitle">AUDIOMETA NEXUS · 有声书元数据处理</span></div>
         </div>
       </div>
       <div class="topbar-controls">
-        <div class="topbar-config-actions">
-          <button type="button" class="quiet-button" id="loadConfigBtn">↺ 加载配置</button>
-          <button type="button" class="quiet-button" id="saveConfigBtn">▣ 保存配置</button>
+        <div class="topbar-config-actions" aria-hidden="true">
+          <button type="button" class="quiet-button" id="loadConfigBtn">加载配置</button>
+          <button type="button" class="quiet-button" id="saveConfigBtn">保存配置</button>
         </div>
-        <button type="button" class="theme-toggle" id="themeToggleBtn" title="切换明暗主题">☀</button>
-        <button type="button" class="topbar-icon-button" id="settingsBtn" title="打开设置中心" aria-label="打开设置中心">⚙</button>
+        <div class="theme-cluster" aria-label="主题切换">
+          <span class="theme-symbol">☼</span>
+          <button type="button" class="theme-toggle" id="themeToggleBtn" title="切换明暗主题" aria-label="切换明暗主题"></button>
+          <span class="theme-symbol">☾</span>
+        </div>
+        <span class="topbar-separator"></span>
         <div class="status-card">
-          <div class="status-copy">
-            <div class="state-row">
-              <span class="state-dot" id="stateDot"></span>
-              <span id="stateText">等待就绪</span>
-            </div>
-            <div class="header-progress"><div class="progress-bar" id="progressBar"></div></div>
-          </div>
+          <span class="queue-state-label">队列状态</span>
           <span class="percent" id="percentText">0%</span>
+          <div class="header-progress"><div class="progress-bar" id="progressBar"></div></div>
+          <span class="queue-count" id="queueCountText">0/0</span>
+          <span class="state-dot" id="stateDot"></span>
+          <span id="stateText" hidden>等待就绪</span>
         </div>
+        <button type="button" class="topbar-icon-button" id="settingsBtn" title="打开设置中心" aria-label="打开设置中心">⚙</button>
       </div>
     </header>
 
     <!-- ── Left Panel ─────────────────────────────── -->
     <section class="left">
-      <div class="workspace-heading">
+      <div class="workspace-heading" hidden>
         <div><strong>元数据工作区</strong><span>配置来源、归档规格与内容信息</span></div>
         <button type="button" class="workspace-clear" id="clearBtn">清空编辑区</button>
       </div>
 
       <form class="form-scroll" id="configForm">
-        <div class="section">
-          <div class="section-title"><span class="section-icon">◈</span>核心来源</div>
+        <div class="section source-section">
+          <div class="section-title"><span class="section-icon">↗</span>核心来源</div>
           <label>音频文件夹路径（请选择 /data 下的专辑目录）</label>
-          <div class="inline">
+          <div class="inline source-directory">
             <input name="input_folder" placeholder="/data/专辑目录" />
             <button type="button" class="quiet-button" id="browseBtn">浏览目录</button>
           </div>
-          <div style="margin-top:12px">
+          <div class="source-query">
             <label>平台专辑 ID / 书名 / 分享链接（可选）</label>
             <div class="source-controls">
               <select name="api_source"></select>
               <input name="api_id" placeholder="输入 ID、书名或分享链接 URL" />
-              <button type="button" class="btn-primary" id="fetchBtn">获取元数据</button>
-              <button type="button" class="quiet-button" id="searchTitleBtn">按书名搜索</button>
+              <button type="button" class="btn-primary" id="fetchBtn">⇩ 获取元数据</button>
+              <button type="button" class="quiet-button" id="searchTitleBtn">⌕ 按书名搜索</button>
             </div>
           </div>
           <div id="titleSearchBackdrop" class="search-results-backdrop" hidden></div>
@@ -2924,44 +3498,43 @@ INDEX_HTML = r"""<!doctype html>
           <div id="authorSearchResults" class="search-results" role="dialog" aria-modal="true" hidden></div>
         </div>
 
-        <div class="section">
-          <div class="section-title"><span class="section-icon">◉</span>元数据档案</div>
-          <div class="grid">
-            <div><label>专辑标题 *</label><input name="title" placeholder="书名" /></div>
-            <div><label>副标题</label><input name="subtitle" placeholder="可选" /></div>
-            <div>
-              <div class="field-label-row">
-                <label>原著作者 *（输入后按回车确认）</label>
-                <button type="button" class="field-mini-action" id="fetchAuthorBtn">按书名获取作者</button>
-              </div>
-              <div class="chips editable" id="authorPool"></div>
-              <input type="hidden" name="author" />
-            </div>
-            <div>
-              <label>演播艺术家 *（输入后按回车确认）</label>
-              <div class="chips editable" id="anchorPool"></div>
-              <input type="hidden" name="anchor" />
-            </div>
+        <div class="section metadata-section">
+          <div class="section-title"><span class="section-icon">▤</span>元数据档案</div>
+          <div class="metadata-title-grid">
+            <div class="metadata-title-field"><label>专辑标题</label><input name="title" placeholder="请输入专辑标题" /></div>
+            <div class="metadata-title-field"><label>副标题</label><input name="subtitle" placeholder="请输入副标题（可选）" /></div>
+          </div>
+          <div class="entity-row">
+            <label>作者</label>
+            <div class="chips editable" id="authorPool"></div>
+            <button type="button" class="field-mini-action" id="fetchAuthorBtn">♧ 按书名获取作者</button>
+            <input type="hidden" name="author" />
+          </div>
+          <div class="entity-row">
+            <label>演播者</label>
+            <div class="chips editable" id="anchorPool"></div>
+            <span class="entity-hint">输入后按回车添加</span>
+            <input type="hidden" name="anchor" />
           </div>
         </div>
 
-        <div class="section">
-          <div class="section-title"><span class="section-icon">⊞</span>规格与归档</div>
-          <div class="grid grid-3">
+        <div class="section archive-section">
+          <div class="section-title"><span class="section-icon">◇</span>规格与归档</div>
+          <div class="archive-main-grid">
             <div><label>发布平台 *</label><select name="platform"></select></div>
             <div><label>专辑分类 *</label><select name="category"></select></div>
             <div><label>专辑状态 *</label><select name="finished"></select></div>
-              <div><label>发布年份 *</label><input name="year" placeholder="请输入发布年份" /></div>
-            <div class="span-2">
-              <label>目标格式与码率</label>
-              <div class="format-row"><select name="target_format"></select><select name="bitrate"></select></div>
-            </div>
-            <div>
+            <div><label>发布年份 *</label><input name="year" placeholder="请选择或填写年份" /></div>
+            <div><label>目标格式</label><select name="target_format"></select></div>
+            <div><label>比特率</label><select name="bitrate"></select></div>
+          </div>
+          <div class="archive-extra-grid">
+            <div class="team-archive">
               <label>制作团队（文件夹后缀）</label>
               <div class="chips editable team-box" id="teamPool"></div>
               <input type="hidden" name="team" />
             </div>
-            <div class="span-2">
+            <div class="series-archive">
               <label>系列档案（同一本书可加入多个系列）</label>
               <div class="series-inline">
                 <div class="chips series-box" id="seriesPool"></div>
@@ -2970,7 +3543,7 @@ INDEX_HTML = r"""<!doctype html>
               <input type="hidden" name="series_name" />
               <input type="hidden" name="series_number" />
             </div>
-            <div class="span-3">
+            <div class="tag-archive">
               <label>专辑标签池（回车添加，点击气泡删除）</label>
               <div class="chips" id="tagPool"></div>
               <input id="tagInput" placeholder="输入新标签，按回车添加..." style="margin-top:7px" />
@@ -2978,27 +3551,27 @@ INDEX_HTML = r"""<!doctype html>
           </div>
         </div>
 
-        <div class="section">
-          <div class="section-title"><span class="section-icon">▣</span>视觉与内容</div>
-          <label>封面图片（Docker 版支持网络封面或容器内路径）</label>
-          <div class="inline cover-input-row" style="margin-bottom:10px">
-            <input name="manual_cover_path" placeholder="/data/专辑/cover.jpg 或 https://..." />
-            <input type="file" id="coverFileInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
-            <div class="cover-actions">
-              <button type="button" class="quiet-button" id="uploadCoverBtn">从电脑上传</button>
-              <button type="button" class="quiet-button" id="previewCoverBtn">预览封面</button>
-            </div>
-          </div>
+        <div class="section visual-section">
+          <div class="section-title"><span class="section-icon">▧</span>视觉与内容</div>
           <div class="cover-row">
-            <div>
+            <div class="cover-preview-column">
               <div class="cover-box">
                 <img id="coverImg" alt="" />
                 <span id="coverEmpty" style="font-size:12px;color:var(--text-3)">暂无封面<br/>1:1</span>
+                <button type="button" class="cover-change-button" id="coverChangeBtn">▧ 更换封面</button>
               </div>
               <div class="cover-meta" id="coverMeta">--</div>
             </div>
-            <div>
-              <label>专辑简介内容</label>
+            <div class="visual-content-column">
+              <div class="cover-toolbar">
+                <input name="manual_cover_path" placeholder="封面 URL 或容器内路径" />
+                <input type="file" id="coverFileInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
+                <div class="cover-actions">
+                  <button type="button" class="btn-primary" id="uploadCoverBtn">⇧ 从电脑上传</button>
+                  <button type="button" class="quiet-button" id="previewCoverBtn">◉ 预览封面</button>
+                </div>
+              </div>
+              <label>简介</label>
               <textarea name="manual_desc" placeholder="简介内容..."></textarea>
             </div>
           </div>
@@ -3009,42 +3582,48 @@ INDEX_HTML = r"""<!doctype html>
 
     <!-- ── Right Panel ─────────────────────────────── -->
     <section class="right">
-      <div class="tabs">
-        <button type="button" class="tab active" data-tab="queue">▣ 任务队列</button>
-        <button type="button" class="tab" data-tab="log">▤ 运行日志</button>
-        <button type="button" class="tab" data-tab="overview">▥ 数据概览</button>
-        <button type="button" class="tab" data-tab="failed">× 异常监控</button>
+      <div class="queue-console">
+        <div class="tabs">
+          <button type="button" class="tab active" data-tab="queue">▣ 任务队列</button>
+          <button type="button" class="tab" data-tab="log">▤ 处理日志</button>
+          <button type="button" class="tab" data-tab="failed">△ 失败任务</button>
+          <button type="button" class="tab overview-tab" data-tab="overview">▥ 数据概览</button>
+        </div>
+
+        <div class="tab-panel active" id="panel-queue">
+          <div class="queue-actions">
+            <button type="button" class="btn-indigo" id="editQueueBtn">✓ 编辑选中任务</button>
+            <button type="button" class="btn-amber" id="removeQueueBtn">× 移除选中任务</button>
+            <button type="button" class="btn-red" id="clearQueueBtn">清空全部队列</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>专辑标题</th><th>平台</th><th>进度</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody id="queueBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="panel-overview"><div class="overview" id="overviewBox"></div></div>
+        <div class="tab-panel" id="panel-failed">
+          <div class="table-wrap">
+            <table><thead><tr><th>文件</th><th>错误</th></tr></thead><tbody id="failedBody"></tbody></table>
+          </div>
+        </div>
+
+        <div class="right-commandbar">
+          <div class="selection-copy"><span>已选 <b id="selectedCountText">0</b> 项</span></div>
+          <div class="ha-process">
+            <button type="button" class="quiet-button" id="addQueueBtn">＋ 加入队列</button>
+            <button type="button" class="btn-indigo" id="startQueueBtn">▷ 开始处理</button>
+            <button type="button" class="btn-red" id="stopBtn">□ 停止</button>
+          </div>
+        </div>
       </div>
 
-      <div class="tab-panel active" id="panel-queue">
-        <div class="queue-actions">
-          <button type="button" class="btn-indigo" id="editQueueBtn">✓ 编辑选中任务</button>
-          <button type="button" class="btn-amber" id="removeQueueBtn">× 移除选中任务</button>
-          <button type="button" class="btn-red" id="clearQueueBtn">清空全部队列</button>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th></th><th>序号</th><th>专辑标题</th><th>原著作者</th><th>演播艺术家</th><th>源路径</th><th>处理状态</th></tr></thead>
-            <tbody id="queueBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="tab-panel" id="panel-log"><div class="log" id="logBox"></div></div>
-      <div class="tab-panel" id="panel-overview"><div class="overview" id="overviewBox"></div></div>
-      <div class="tab-panel" id="panel-failed">
-        <div class="table-wrap">
-          <table><thead><tr><th>文件</th><th>错误</th></tr></thead><tbody id="failedBody"></tbody></table>
-        </div>
-      </div>
-
-      <div class="right-commandbar">
-        <div class="selection-copy"><span class="state-dot"></span><span>队列操作</span></div>
-        <div class="ha-process">
-          <button type="button" class="btn-primary" id="addQueueBtn">＋ 加入队列</button>
-          <button type="button" class="btn-green" id="startQueueBtn">▷ 开始处理</button>
-          <button type="button" class="btn-red" id="stopBtn">□ 停止</button>
-        </div>
+      <div class="live-log-card">
+        <div class="live-log-head"><strong>◉ 处理日志（实时）</strong><button type="button" class="quiet-button" id="clearLogBtn">▧ 清空日志</button></div>
+        <div class="tab-panel active" id="panel-log"><div class="log" id="logBox"></div></div>
       </div>
     </section>
   </div>
@@ -3155,13 +3734,16 @@ INDEX_HTML = r"""<!doctype html>
 
   <script>
     /* ── Theme Toggle ──────────────────────────── */
-    const _THEME_KEY = 'audiometa-theme';
-    const _THEME_ICON = { dark: '☀', light: '☾' };
+    const _THEME_KEY = 'audiometa-theme-v3-dark-console';
 
     function applyTheme(theme) {
       document.documentElement.setAttribute('data-theme', theme);
       const btn = document.getElementById('themeToggleBtn');
-      if (btn) btn.textContent = _THEME_ICON[theme] || '☀';
+      if (btn) {
+        btn.textContent = '';
+        btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+        btn.title = theme === 'dark' ? '切换到浅色模式' : '切换到深色模式';
+      }
       localStorage.setItem(_THEME_KEY, theme);
     }
 
@@ -3170,7 +3752,7 @@ INDEX_HTML = r"""<!doctype html>
       if (saved === 'light' || saved === 'dark') {
         applyTheme(saved);
       } else {
-        applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme('dark');
       }
     })();
 
@@ -4090,27 +4672,63 @@ INDEX_HTML = r"""<!doctype html>
       toast('已清空左侧编辑区');
     }
 
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      })[character]);
+    }
+
     function renderQueue(queue) {
       const tbody = document.getElementById('queueBody');
       tbody.innerHTML = '';
       if (!(queue || []).length) {
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="7"><div class="empty-state"><div><strong>任务队列为空</strong><span>填写左侧专辑信息后，可加入队列或直接开始处理。</span></div></div></td>';
+        tr.innerHTML = '<td colspan="6"><div class="empty-state"><div><strong>任务队列为空</strong><span>填写左侧专辑信息后，可加入队列或直接开始处理。</span></div></div></td>';
         tbody.appendChild(tr);
+        selectedQueueIds.clear();
+        updateSelectedQueueUi();
         return;
       }
+      const validIds = new Set((queue || []).map(item => item.id));
+      [...selectedQueueIds].forEach(id => { if (!validIds.has(id)) selectedQueueIds.delete(id); });
       (queue || []).forEach((item, index) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><input class="queue-check" type="checkbox" value="${item.id}"></td><td>${index + 1}</td><td>${item.title || ''}</td><td>${item.author || ''}</td><td>${item.anchor || ''}</td><td title="${item.source || ''}">${item.source || ''}</td><td><span class="status-badge ${item.status || 'pending'}">${statusText(item.status)}</span>${item.error ? ' · ' + item.error : ''}</td>`;
+        const params = item.params || {};
+        const platform = params.platform || params.api_source || '未指定';
+        const progress = item.status === 'done' ? 100 : item.status === 'processing' ? Math.round(latestStatus?.progress || 0) : 0;
+        const progressText = item.status === 'pending' || item.status === 'stopped' ? '—' : `${progress}%`;
+        const platformMark = String(platform).includes('喜马拉雅') ? '听' : String(platform).includes('蜻蜓') ? '蜓' : String(platform).slice(0, 1);
+        tr.dataset.queueId = item.id;
+        tr.title = item.source || '';
+        tr.classList.toggle('selected', selectedQueueIds.has(item.id));
+        tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(item.title || '未命名')}</td><td><span class="queue-platform"><i class="queue-platform-icon">${escapeHtml(platformMark)}</i>${escapeHtml(platform)}</span></td><td><span class="queue-progress ${item.status === 'done' ? 'done' : ''}"><span>${progressText}</span><i class="queue-progress-track"><i style="width:${progress}%"></i></i></span></td><td><span class="status-badge ${item.status || 'pending'}">${escapeHtml(statusText(item.status))}</span></td><td><span class="queue-row-actions"><button type="button" data-action="run" title="开始任务">▷</button><button type="button" data-action="edit" title="编辑任务">⋮</button></span></td>`;
         tbody.appendChild(tr);
-      });
-      tbody.querySelectorAll('.queue-check').forEach(checkbox => {
-        checkbox.checked = selectedQueueIds.has(checkbox.value);
-        checkbox.onchange = () => {
-          if (checkbox.checked) selectedQueueIds.add(checkbox.value);
-          else selectedQueueIds.delete(checkbox.value);
+        tr.onclick = event => {
+          const action = event.target.closest('[data-action]')?.dataset.action;
+          if (action) {
+            event.stopPropagation();
+            selectedQueueIds.clear();
+            selectedQueueIds.add(item.id);
+            updateSelectedQueueUi();
+            if (action === 'run') startQueue().catch(error => toast(error.message));
+            else editSelectedQueue();
+            return;
+          }
+          if (selectedQueueIds.has(item.id)) selectedQueueIds.delete(item.id);
+          else selectedQueueIds.add(item.id);
+          tr.classList.toggle('selected', selectedQueueIds.has(item.id));
+          updateSelectedQueueUi();
         };
       });
+      updateSelectedQueueUi();
+    }
+
+    function updateSelectedQueueUi() {
+      const count = selectedQueueIds.size;
+      const countText = document.getElementById('selectedCountText');
+      if (countText) countText.textContent = String(count);
+      const queueActions = document.querySelector('.queue-actions');
+      if (queueActions) queueActions.classList.toggle('has-selection', count > 0);
     }
 
     function statusText(value) {
@@ -4283,6 +4901,10 @@ INDEX_HTML = r"""<!doctype html>
       document.getElementById('stateText').textContent = s.message || (s.running ? '处理中' : '等待就绪');
       document.getElementById('percentText').textContent = Math.round(s.progress || 0) + '%';
       document.getElementById('progressBar').style.width = (s.progress || 0) + '%';
+      const totalQueueItems = (s.queue || []).length;
+      const finishedQueueItems = (s.queue || []).filter(item => item.status === 'done').length;
+      const queueCountText = document.getElementById('queueCountText');
+      if (queueCountText) queueCountText.textContent = `${finishedQueueItems}/${totalQueueItems}`;
       document.getElementById('startQueueBtn').disabled = !!s.running;
       document.getElementById('stopBtn').disabled = !s.running;
       const dot = document.getElementById('stateDot');
@@ -4615,10 +5237,14 @@ INDEX_HTML = r"""<!doctype html>
     initMobileSections();
     document.querySelectorAll('.tab').forEach(btn => btn.onclick = () => {
       document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
       btn.classList.add('active');
+      if (btn.dataset.tab === 'log') {
+        scheduleLogRender(true);
+        document.querySelector('.live-log-card')?.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+        return;
+      }
+      document.querySelectorAll('.queue-console > .tab-panel').forEach(x => x.classList.remove('active'));
       document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
-      if (btn.dataset.tab === 'log') scheduleLogRender(true);
     });
     form.addEventListener('input', e => e.target.classList.remove('field-error'));
     form.addEventListener('change', e => e.target.classList.remove('field-error'));
@@ -4659,6 +5285,7 @@ INDEX_HTML = r"""<!doctype html>
     document.getElementById('clearQueueBtn').onclick = () => clearQueue().catch(e => toast(e.message));
     document.getElementById('previewCoverBtn').onclick = previewCover;
     document.getElementById('uploadCoverBtn').onclick = () => document.getElementById('coverFileInput').click();
+    document.getElementById('coverChangeBtn').onclick = () => document.getElementById('coverFileInput').click();
     document.getElementById('coverFileInput').addEventListener('change', event => {
       uploadCoverFromComputer(event.target.files?.[0]);
       event.target.value = '';
@@ -4679,6 +5306,13 @@ INDEX_HTML = r"""<!doctype html>
       openBlacklistModal().catch(e => toast(e.message));
     };
     document.getElementById('exportLogBtn').onclick = exportLogs;
+    document.getElementById('clearLogBtn').onclick = () => {
+      clientLogs = [];
+      lastRenderedLogSeq = lastLogSeq;
+      lastRenderedLogEpoch = currentLogEpoch;
+      renderLogs([]);
+      toast('已清空当前日志视图');
+    };
     document.getElementById('closeCookieBtn').onclick = () => document.getElementById('cookieModal').classList.remove('show');
     document.getElementById('saveCookieBtn').onclick = () => saveCookies().catch(e => toast(e.message));
     document.getElementById('closeBlacklistBtn').onclick = () => document.getElementById('blacklistModal').classList.remove('show');

@@ -137,6 +137,22 @@ class RegressionTests(unittest.TestCase):
         duplicates = sorted({element_id for element_id in static_ids if static_ids.count(element_id) > 1})
         self.assertEqual(duplicates, [])
 
+    def test_dark_console_matches_preview_structure(self):
+        for marker in (
+            'class="theme-cluster"', 'id="queueCountText"', 'class="queue-console"',
+            'class="live-log-card"', 'id="selectedCountText"', 'id="clearLogBtn"',
+            'class="metadata-title-grid"', 'class="archive-main-grid"',
+        ):
+            self.assertIn(marker, INDEX_HTML)
+        self.assertIn("DARK CONSOLE — PREVIEW MATCH", INDEX_HTML)
+        self.assertIn("grid-template-columns: minmax(650px, 1.03fr) minmax(610px, .97fr)", INDEX_HTML)
+        self.assertIn("applyTheme('dark')", INDEX_HTML)
+
+    def test_preview_layout_keeps_live_log_visible_with_queue(self):
+        self.assertIn('.live-log-card #panel-log, .live-log-card #panel-log.active', INDEX_HTML)
+        self.assertIn("document.querySelectorAll('.queue-console > .tab-panel')", INDEX_HTML)
+        self.assertNotIn("document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'))", INDEX_HTML)
+
     def test_ypshuo_author_candidates_require_exact_title_and_are_distinct(self):
         candidates = [
             {"id": "1", "novel_name": "我不是戏神", "author_name": "三九音域"},
