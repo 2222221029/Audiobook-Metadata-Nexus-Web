@@ -562,6 +562,7 @@ def _qidian_plugin_detail(book_id: str) -> dict:
     if category and category not in tags:
         tags.append(category)
     cover = str(data.get("CoverUrl") or data.get("coverUrl") or "").strip().replace("http://", "https://")
+    release_date = _extract_qidian_cover_year(cover)
     status = str(data.get("ActionStatus") or data.get("actionStatus") or "").strip()
     finished = "完结" if "完结" in status else "连载" if status else ""
     return {
@@ -572,8 +573,14 @@ def _qidian_plugin_detail(book_id: str) -> dict:
         "artist": str(data.get("AnchorName") or data.get("anchorName") or "").strip(),
         "desc": str(data.get("Intro") or data.get("intro") or data.get("Description") or "").strip(),
         "info": str(data.get("Intro") or data.get("intro") or data.get("Description") or "").strip(),
-        "releaseDate": "", "category": category, "finished": finished, "tags": tags,
+        "releaseDate": release_date, "category": category, "finished": finished, "tags": tags,
     }
+
+
+def _extract_qidian_cover_year(cover_url: str) -> str:
+    """起点有声封面常把上传日期写入 URL，例如 /coverimg/2022-02-08/xxx.jpg。"""
+    match = re.search(r"/(?:19|20)\d{2}[-_/](?:0?[1-9]|1[0-2])[-_/](?:0?[1-9]|[12]\d|3[01])(?:/|$)", str(cover_url or ""))
+    return match.group(0).strip("/_").split("-")[0].split("/")[0] if match else ""
 
 
 def qidian_api(album_id: str, cookie_str: str | None = None) -> dict:
@@ -825,6 +832,8 @@ def yunting_api(album_id: str) -> dict:
                         release_date = s[:4]
             except: 
                 pass
+        if not release_date:
+            release_date = _extract_yunting_cover_year(cover)
 
         category = (data.get("categoryName") or data.get("typeName") or data.get("category") or "").strip()
 
@@ -838,6 +847,17 @@ def yunting_api(album_id: str) -> dict:
 
     except Exception as e: 
         raise Exception(f"云听fm API异常：{str(e)}")
+
+
+def _extract_yunting_cover_year(cover_url: str) -> str:
+    """云听封面常见路径为 /202211/09/18/xxx.jpg，使用其上传日期作为年份兜底。"""
+    from urllib.parse import unquote
+    value = unquote(str(cover_url or ""))
+    match = re.search(r"/(?:19|20)(\d{2})(?:0[1-9]|1[0-2])/(?:0[1-9]|[12]\d|3[01])/(?:0[1-9]|[12]\d|3[01])(?:/|$)", value)
+    if match:
+        return ("20" if match.group(0).find("/20") >= 0 else "19") + match.group(1)
+    match = re.search(r"/(?:19|20)(\d{2})[-_/](?:0?[1-9]|1[0-2])[-_/](?:0?[1-9]|[12]\d|3[01])(?:/|$)", value)
+    return (re.search(r"(?:19|20)\d{2}", match.group(0)).group(0) if match else "")
 
 def qingting_api(album_id: str) -> dict:
     try:

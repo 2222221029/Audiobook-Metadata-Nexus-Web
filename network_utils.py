@@ -91,6 +91,9 @@ def parse_qidian_share_html(html: str, page_url: str = "") -> dict:
         if cover:
             cover = re.sub(r'/180$', '', cover)
             out["cover"] = out["bestCover"] = out["pic"] = cover
+            year_match = re.search(r"/(?:19|20)\d{2}[-_/](?:0?[1-9]|1[0-2])[-_/](?:0?[1-9]|[12]\d|3[01])(?:/|$)", cover)
+            if year_match:
+                out["releaseDate"] = re.search(r"(?:19|20)\d{2}", year_match.group(0)).group(0)
         m = re.search(r'class="[^"]*subtitle-4[^"]*">([^<]+)<', html)
         author = (m.group(1).strip() if m else "").strip()
         if not author:
