@@ -21,6 +21,7 @@ from api_clients import (
     kuwo_api,
     ximalaya_api,
     yunting_api,
+    search_platform_metadata,
 )
 from config import CATEGORY_MAP, FFMPEG_PATH, FFPROBE_PATH, NETWORK_VERIFY_SSL, get_platform_cookies, get_platform_options, set_platform_cookies
 from network_utils import clean_html_tags, fetch_share_page_html, get_safe_session, parse_fanqie_share_html, parse_qidian_share_html
@@ -1389,6 +1390,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             if path == "/api/fetch-metadata":
                 meta = fetch_api_metadata(payload.get("api_source"), payload.get("api_id"))
                 return json_response(self, {"ok": True, "metadata": meta})
+            if path == "/api/search-metadata":
+                results = search_platform_metadata(payload.get("api_source"), payload.get("keyword"))
+                return json_response(self, {"ok": True, "results": results})
             if path == "/api/fetch-link":
                 meta = fetch_link_metadata(payload.get("url"), payload.get("platform"))
                 return json_response(self, {"ok": True, "metadata": meta})
@@ -2034,6 +2038,12 @@ INDEX_HTML = r"""<!doctype html>
     }
     .cover-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
     .cover-meta { margin-top: 5px; color: var(--text-3); font-size: 11px; text-align: center; }
+    .search-results { display: grid; gap: 7px; margin-top: 12px; }
+    .search-result { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; width: 100%; padding: 8px 10px; text-align: left; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; }
+    .search-result:hover { border-color: var(--primary); background: var(--primary-bg); }
+    .search-result img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; background: var(--surface-3); }
+    .search-result-title { font-weight: 700; }
+    .search-result-meta { margin-top: 3px; color: var(--text-3); font-size: 12px; }
 
     /* ── Toolbox ──────────────────────────────── */
     .toolbox {
@@ -2458,12 +2468,13 @@ INDEX_HTML = r"""<!doctype html>
           </div>
           <div class="grid" style="margin-top:10px">
             <div>
-              <label>平台专辑 ID（可选）</label>
-              <div class="field-row"><select name="api_source"></select><input name="api_id" placeholder="专辑 ID" /></div>
+              <label>平台专辑 ID / 书名（可选）</label>
+              <div class="field-row"><select name="api_source"></select><input name="api_id" placeholder="输入专辑 ID 或书名" /></div>
             </div>
             <div>
               <label>&nbsp;</label>
               <button type="button" class="btn-primary" id="fetchBtn" style="width:100%;min-height:40px">获取元数据</button>
+              <button type="button" class="quiet-button" id="searchTitleBtn" style="width:100%;min-height:36px;margin-top:7px">按书名搜索</button>
             </div>
             <div>
               <label>链接搜索（起点 / 番茄）</label>
@@ -2474,6 +2485,7 @@ INDEX_HTML = r"""<!doctype html>
               <button type="button" class="btn-green" id="fetchLinkBtn" style="width:100%;min-height:40px">请求链接</button>
             </div>
           </div>
+          <div id="titleSearchResults" class="search-results" hidden></div>
         </div>
 
         <div class="section">
@@ -3374,6 +3386,41 @@ INDEX_HTML = r"""<!doctype html>
       await refreshStatus();
     }
 
+    function renderTitleSearchResults(results) {
+      const box = document.getElementById('titleSearchResults');
+      box.replaceChildren();
+      if (!results.length) { box.hidden = false; box.textContent = '没有找到匹配专辑'; return; }
+      results.forEach(item => {
+        const button = document.createElement('button');
+        button.type = 'button'; button.className = 'search-result';
+        const cover = document.createElement('img'); cover.src = item.cover || ''; cover.alt = '';
+        const body = document.createElement('span');
+        body.innerHTML = `<span class="search-result-title"></span><span class="search-result-meta"></span>`;
+        body.querySelector('.search-result-title').textContent = item.title || '未命名专辑';
+        body.querySelector('.search-result-meta').textContent = [item.author, item.id].filter(Boolean).join(' · ');
+        const pick = document.createElement('span'); pick.textContent = '选择';
+        button.append(cover, body, pick);
+        button.onclick = async () => {
+          form.api_id.value = item.id;
+          box.hidden = true;
+          await fetchMetadata();
+        };
+        box.appendChild(button);
+      });
+      box.hidden = false;
+    }
+
+    async function searchByTitle() {
+      const btn = document.getElementById('searchTitleBtn');
+      const keyword = form.api_id.value.trim();
+      if (!keyword) return toast('请输入书名');
+      setButtonBusy(btn, true, '搜索中...');
+      try {
+        const data = await api('/api/search-metadata', { method: 'POST', body: JSON.stringify({api_source: form.api_source.value, keyword}), timeoutMs: 30000 });
+        renderTitleSearchResults(data.results || []);
+      } finally { setButtonBusy(btn, false); }
+    }
+
     async function stopTask() {
       toast('正在停止任务...');
       await api('/api/stop', { method: 'POST', body: '{}' });
@@ -3962,6 +4009,7 @@ INDEX_HTML = r"""<!doctype html>
     document.getElementById('saveConfigBtn').onclick = () => saveConfig().catch(e => toast(e.message));
     document.getElementById('loadConfigBtn').onclick = () => loadConfig().catch(e => toast(e.message));
     document.getElementById('fetchBtn').onclick = () => fetchMetadata().catch(e => toast(e.message));
+    document.getElementById('searchTitleBtn').onclick = () => searchByTitle().catch(e => toast(e.message));
     document.getElementById('fetchLinkBtn').onclick = () => fetchLink().catch(e => toast(e.message));
     document.getElementById('addQueueBtn').onclick = () => addQueueFast().catch(e => toast(e.message));
     document.getElementById('startQueueBtn').onclick = () => startQueue().catch(e => toast(e.message));

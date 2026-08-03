@@ -443,6 +443,50 @@ def qidian_api(album_id: str, cookie_str: str | None = None) -> dict:
         errors.append(str(exc))
     raise Exception(f"起点详情获取失败：{'；'.join(errors)}")
 
+def search_platform_metadata(platform: str, keyword: str, limit: int = 12) -> list[dict]:
+    """Search book/album titles using the same public endpoints as the plugins."""
+    platform = str(platform or "").strip()
+    keyword = str(keyword or "").strip()
+    if not keyword:
+        raise ValueError("请输入书名")
+    session = get_safe_session()
+    headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json, text/plain, */*"}
+    results = []
+
+    def add(item_id, title, author="", cover="", intro="", tags=None):
+        item_id, title = str(item_id or "").strip(), str(title or "").strip()
+        if not item_id or not title or any(item["id"] == item_id for item in results):
+            return
+        results.append({"id": item_id, "title": title, "author": str(author or "").strip(), "cover": str(cover or "").strip(), "desc": str(intro or "").strip(), "tags": tags or []})
+
+    if platform == "喜马拉雅":
+        url = "https://www.ximalaya.com/revision/search"
+        params = {"core": "album", "spellchecker": "true", "rows": limit, "condition": "relation", "device": "web", "kw": keyword, "page": 1}
+        data = session.get(url, params=params, headers={**headers, "Referer": "https://www.ximalaya.com/"}, timeout=20).json()
+        docs = (((data.get("data") or {}).get("result") or {}).get("response") or {}).get("docs") or []
+        for item in docs:
+            add(item.get("id"), item.get("title"), item.get("nickname") or item.get("anchorName"), item.get("cover_path"), item.get("intro"), [x.strip() for x in str(item.get("tags") or "").split(",") if x.strip()])
+    elif platform == "番茄畅听":
+        url = "https://api5-sinfonlinec.novelfm.com/novelfm/bookmall/search/page/v1/"
+        params = {"device_platform": "android", "os": "android", "aid": "3040", "app_name": "novel_fm", "version_code": "608", "_rticket": int(time.time() * 1000)}
+        data = session.post(url, params=params, json={"query": keyword, "limit": limit, "offset": 0}, headers=headers, timeout=20).json()
+        for group in ((data.get("data") or {}).get("search_data") or []):
+            for item in (group.get("books") or []):
+                add(item.get("book_id"), item.get("book_name"), item.get("author"), item.get("thumb_url"), item.get("abstract"), str(item.get("tags") or "").split(","))
+    elif platform == "起点听书":
+        url = "https://qdcg.qidian.com/api/search/list"
+        data = session.get(url, params={"key": keyword, "pageIndex": 1, "pageSize": limit, "site": 3, "model": 1}, headers={**headers, "AppId": "50", "AreaId": "501000"}, timeout=20).json()
+        for item in ((data.get("Data") or {}).get("items") or []):
+            add(item.get("bookId"), item.get("bookName"), item.get("authorName"), "", item.get("description"), [item.get("categoryName")] if item.get("categoryName") else [])
+    elif platform == "酷我听书":
+        data = session.get("http://search.kuwo.cn/r.s", params={"pn": 0, "rn": limit, "all": keyword, "ft": "album", "newsearch": 1, "rformat": "json", "encoding": "utf8", "plat": "pc", "pcjson": 1}, headers=headers, timeout=20).json()
+        for item in data.get("albumlist") or data.get("abslist") or []:
+            add(item.get("albumid") or item.get("id"), item.get("name"), item.get("artist") or item.get("aartist"), item.get("hts_img") or item.get("img"), item.get("info"))
+    else:
+        raise ValueError(f"{platform} 暂未接入书名搜索接口")
+    return results[:limit]
+
+
 def netease_ting_api(album_id: str) -> dict:
     try:
         session = get_safe_session()
