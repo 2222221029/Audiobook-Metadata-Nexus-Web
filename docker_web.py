@@ -824,11 +824,15 @@ async def fetch_fanqie_rendered_metadata_async(share_url):
     """
     js_fallback = r"""
     (function(){
-      var title = '', author = '', cover = '', desc = '', category = '', finished = '';
+      var title = '', author = '', cover = '', desc = '', category = '', finished = '', tags = [], releaseDate = '';
       var titleEl = document.querySelector('.book-meta-new-info-title');
       if (titleEl) title = (titleEl.innerText || titleEl.textContent || '').trim();
       var authorEl = document.querySelector('.book-meta-new-info-desc-author');
       if (authorEl) author = (authorEl.innerText || authorEl.textContent || '').trim();
+      if (!author) {
+        var authorAlt = document.querySelector('[class*="author"], [class*="Author"]');
+        if (authorAlt) author = (authorAlt.innerText || authorAlt.textContent || '').trim();
+      }
       var imgEl = document.querySelector('.book-meta-new-img');
       if (imgEl && imgEl.src) cover = imgEl.src;
 
@@ -868,12 +872,21 @@ async def fetch_fanqie_rendered_metadata_async(share_url):
         }
       }
       var tagEls = document.querySelectorAll('.book-introduction-title-tag-text');
-      if (tagEls.length) category = [].map.call(tagEls, function(n){ return (n.textContent || '').trim(); }).filter(Boolean).join(' ');
+      if (tagEls.length) tags = [].map.call(tagEls, function(n){ return (n.textContent || '').trim(); }).filter(Boolean);
+      if (!tags.length) {
+        var tagAlt = document.querySelectorAll('[class*="tag"], [class*="Tag"], [class*="label"], [class*="Label"]');
+        tags = [].map.call(tagAlt, function(n){ return (n.textContent || '').trim(); }).filter(function(v){ return v && v.length < 30; }).slice(0, 20);
+      }
+      if (tags.length) category = tags[0];
+
+      var allText = document.body ? (document.body.innerText || '') : '';
+      var yearMatch = allText.match(/(?:出版|发布|上线|创建)[^\d]{0,8}((?:19|20)\d{2})/);
+      if (yearMatch) releaseDate = yearMatch[1];
 
       if (!title) { var ogTitle = document.querySelector('meta[property="og:title"]'); if (ogTitle && ogTitle.getAttribute('content')) title = ogTitle.getAttribute('content'); }
       if (!cover) { var ogImage = document.querySelector('meta[property="og:image"]'); if (ogImage && ogImage.getAttribute('content')) cover = ogImage.getAttribute('content'); }
       if (title === '\u756a\u8304\u7545\u542c') title = '';
-      return { title: title, author: author, cover: cover, desc: desc, category: category, finished: finished };
+      return { title: title, author: author, cover: cover, desc: desc, category: category, finished: finished, tags: tags, releaseDate: releaseDate };
     })();
     """
 
@@ -881,6 +894,8 @@ async def fetch_fanqie_rendered_metadata_async(share_url):
         browser = await playwright.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
         try:
             page = await browser.new_page(user_agent=DESKTOP_UA, viewport={"width": 900, "height": 700})
+            captured_responses = []
+            page.on("response", lambda response: captured_responses.append(response) if any(token in response.url for token in ("share/audio/detail", "audio/detail/v1", "share/get_info", "playerapi/share")) else None)
             await page.goto(share_url, wait_until="domcontentloaded", timeout=30000)
             dom_cover = ""
             captured = ""
@@ -892,6 +907,19 @@ async def fetch_fanqie_rendered_metadata_async(share_url):
                 if captured:
                     break
                 await page.wait_for_timeout(1000)
+
+            # 优先解析浏览器实际收到的 JSON 响应，避免重新请求时因签名、Cookie 或设备参数失效而只剩标题。
+            for response in reversed(captured_responses):
+                try:
+                    payload = await response.json()
+                    response_url = response.url
+                    parsed = parse_fanqie_audio_detail_response(payload) if "audio/detail" in response_url else parse_fanqie_get_info_response(payload)
+                    if parsed:
+                        if dom_cover and not parsed.get("cover"):
+                            parsed["cover"] = dom_cover
+                        return parsed
+                except Exception:
+                    continue
 
             if captured and isinstance(captured, str):
                 headers = {
