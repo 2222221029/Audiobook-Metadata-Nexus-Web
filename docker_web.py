@@ -1257,6 +1257,24 @@ def file_response(handler, path):
     handler.wfile.write(data)
 
 
+def remote_cover_response(handler, url):
+    target = str(url or "").strip()
+    if not target.startswith(("https://bookcover.yuewen.com/", "https://img2.kuwo.cn/", "https://img3.kuwo.cn/")):
+        return text_response(handler, "Forbidden", "text/plain; charset=utf-8", 403)
+    try:
+        response = get_safe_session().get(target, headers={"Referer": "https://qidian.com/", "User-Agent": "Mozilla/5.0"}, timeout=15)
+        if response.status_code != 200 or not response.content:
+            return text_response(handler, "Not Found", "text/plain; charset=utf-8", 404)
+        handler.send_response(200)
+        handler.send_header("Content-Type", response.headers.get("Content-Type", "image/jpeg"))
+        handler.send_header("Cache-Control", "public, max-age=3600")
+        handler.send_header("Content-Length", str(len(response.content)))
+        handler.end_headers()
+        handler.wfile.write(response.content)
+    except Exception:
+        return text_response(handler, "Not Found", "text/plain; charset=utf-8", 404)
+
+
 def authorized(handler):
     if not WEB_AUTH_TOKEN:
         return True
@@ -1364,6 +1382,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return json_response(self, {"ok": True, **load_folder_config((query.get("path") or [""])[0])})
             if path == "/api/cover":
                 return file_response(self, (query.get("path") or [""])[0])
+            if path == "/api/remote-cover":
+                return remote_cover_response(self, (query.get("url") or [""])[0])
             if path == "/api/cookies":
                 return json_response(self, {"ok": True, "cookies": get_platform_cookies()})
             if path == "/api/tag-blacklist":
@@ -3423,7 +3443,12 @@ INDEX_HTML = r"""<!doctype html>
       results.forEach(item => {
         const button = document.createElement('button');
         button.type = 'button'; button.className = 'search-result';
-        const cover = document.createElement('img'); cover.src = item.cover || ''; cover.alt = '';
+        const cover = document.createElement('img');
+        const coverUrl = item.cover || '';
+        cover.src = /^https:\/\/bookcover\.yuewen\.com\//i.test(coverUrl)
+          ? '/api/remote-cover?url=' + encodeURIComponent(coverUrl)
+          : coverUrl;
+        cover.alt = '';
         cover.onerror = () => { cover.removeAttribute('src'); cover.alt = '暂无封面'; };
         const body = document.createElement('span');
         body.innerHTML = `<span class="search-result-title"></span><span class="search-result-meta"></span>`;
