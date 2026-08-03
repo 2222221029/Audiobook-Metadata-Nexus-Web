@@ -163,6 +163,29 @@ def get_kuwo_album_info(album_id: str, pn=1, rn=24) -> dict:
     return None
 
 def kuwo_api(album_id: str) -> dict:
+    # Prefer the plugin's stable album detail endpoint. Some search results
+    # from later pages are not accepted by the newer web album endpoint.
+    try:
+        session = get_safe_session()
+        response = session.get(
+            "https://datacenter.kuwo.cn/d.c",
+            params={"cmd": "query", "ft": "album", "ids": str(album_id).strip(), "resenc": "utf8", "cmkey": "plist_album"},
+            headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.kuwo.cn/"},
+            timeout=15,
+        )
+        if response.status_code == 200:
+            albums = response.json()
+            album = albums[0] if isinstance(albums, list) and albums else {}
+            if isinstance(album, dict) and (album.get("name") or album.get("album")):
+                name = album.get("name") or album.get("album") or album.get("title") or ""
+                cover = album.get("pic") or album.get("hts_img") or album.get("img") or ""
+                cover = re.sub(r"/([1-9])00/", r"/\g<1>000/", str(cover))
+                artist = album.get("artist") or album.get("aartist") or album.get("author") or ""
+                info = album.get("intro") or album.get("info") or album.get("albuminfo") or ""
+                release = str(album.get("releaseDate") or album.get("pubdate") or "")[:4]
+                return {"album": name, "pic": cover, "artist": artist, "info": info, "releaseDate": release}
+    except Exception:
+        pass
     raw = get_kuwo_album_info(album_id, pn=1, rn=1)
     if not raw: raise Exception("酷我听书API请求失败或无数据返回")
     data = raw.get("data") or {}
