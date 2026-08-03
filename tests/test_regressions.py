@@ -10,6 +10,14 @@ from docker_web import INDEX_HTML, collect_tags_and_year_from_payload, collect_x
 
 
 class RegressionTests(unittest.TestCase):
+    def test_native_selects_are_enhanced_with_custom_popovers(self):
+        self.assertIn("custom-select-trigger", INDEX_HTML)
+        self.assertIn("custom-select-popover", INDEX_HTML)
+        self.assertIn("function initCustomSelects()", INDEX_HTML)
+        self.assertIn("await loadOptions();\n      initCustomSelects();", INDEX_HTML)
+        self.assertIn("event.key === 'Escape'", INDEX_HTML)
+        self.assertIn("aria-selected", INDEX_HTML)
+
     def test_directory_picker_double_click_does_not_select_text(self):
         self.assertIn("-webkit-user-select: none; user-select: none", INDEX_HTML)
         self.assertIn("if (event.detail > 1) event.preventDefault()", INDEX_HTML)

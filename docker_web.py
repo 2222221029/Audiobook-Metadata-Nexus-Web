@@ -1772,6 +1772,81 @@ INDEX_HTML = r"""<!doctype html>
       background-color: var(--primary);
       color: #fff;
     }
+    .custom-select {
+      position: relative; width: 100%; min-width: 0;
+    }
+    .custom-select-native {
+      position: absolute !important; width: 1px !important; height: 1px !important;
+      min-height: 0 !important; padding: 0 !important; margin: 0 !important;
+      opacity: 0; pointer-events: none; overflow: hidden;
+    }
+    .custom-select-trigger {
+      width: 100%; min-height: 40px; padding: 8px 12px;
+      justify-content: space-between; gap: 12px;
+      background: var(--input-bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius-xs);
+      box-shadow: none; font-size: 14px; font-weight: 500;
+      text-align: left; letter-spacing: 0;
+    }
+    .custom-select-trigger:hover:not(:disabled) {
+      background: var(--surface-3); border-color: var(--border-med);
+      color: var(--text); transform: none; box-shadow: none;
+    }
+    .custom-select-trigger:focus-visible, .custom-select-trigger.open {
+      outline: none; border-color: var(--primary);
+      background: var(--primary-bg);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+    }
+    .custom-select-arrow {
+      width: 9px; height: 9px; flex: 0 0 9px;
+      border-right: 2px solid var(--text-3); border-bottom: 2px solid var(--text-3);
+      transform: rotate(45deg) translateY(-2px);
+      transition: transform .18s ease, border-color .18s ease;
+    }
+    .custom-select-trigger.open .custom-select-arrow {
+      border-color: var(--primary-light);
+      transform: rotate(225deg) translate(-1px, -1px);
+    }
+    .custom-select-native.field-error + .custom-select-trigger {
+      border-color: var(--danger); background: var(--danger-bg);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
+    }
+    .custom-select-popover {
+      position: fixed; z-index: 120; display: none;
+      padding: 6px; overflow-y: auto; overscroll-behavior: contain;
+      background: color-mix(in srgb, var(--surface) 96%, transparent);
+      border: 1px solid var(--border-med); border-radius: 12px;
+      box-shadow: 0 18px 46px rgba(0,0,0,.38), 0 0 0 1px rgba(255,255,255,.025);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      animation: custom-select-in .14s ease-out;
+    }
+    .custom-select-popover.open { display: block; }
+    .custom-select-popover[data-side="top"] { transform-origin: bottom center; }
+    .custom-select-popover[data-side="bottom"] { transform-origin: top center; }
+    @keyframes custom-select-in {
+      from { opacity: 0; transform: translateY(4px) scale(.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .custom-select-option {
+      width: 100%; min-height: 38px; padding: 7px 10px;
+      justify-content: flex-start; gap: 10px;
+      background: transparent; border: 0; border-radius: var(--radius-xs);
+      color: var(--text-2); box-shadow: none;
+      font-size: 13px; font-weight: 500; text-align: left;
+    }
+    .custom-select-option:hover:not(:disabled), .custom-select-option:focus-visible {
+      outline: none; background: var(--primary-bg); color: var(--text);
+      transform: none; box-shadow: none;
+    }
+    .custom-select-option.selected {
+      background: color-mix(in srgb, var(--primary) 18%, transparent);
+      color: var(--primary-light); font-weight: 700;
+    }
+    .custom-select-option::after {
+      content: '✓'; margin-left: auto; color: var(--primary-light);
+      opacity: 0; transform: scale(.7); transition: opacity .14s ease, transform .14s ease;
+    }
+    .custom-select-option.selected::after { opacity: 1; transform: scale(1); }
     textarea { min-height: 130px; resize: none; line-height: 1.6; }
     input:focus, select:focus, textarea:focus {
       border-color: var(--primary); background-color: var(--primary-bg);
@@ -2091,7 +2166,7 @@ INDEX_HTML = r"""<!doctype html>
       .ha-process button, .ha-config button { min-height: 36px; font-size: 12px; padding: 0 10px; }
       .section { padding: 11px; margin-bottom: 7px; }
       .section-title { margin-bottom: 9px; font-size: 12.5px; }
-      input, select { min-height: 36px; font-size: 13px; padding: 7px 10px; }
+      input, select, .custom-select-trigger { min-height: 36px; font-size: 13px; padding: 7px 10px; }
       textarea { min-height: 106px; }
       .chips { min-height: 36px; font-size: 13px; }
       .chip-input { font-size: 13px; }
@@ -2159,7 +2234,7 @@ INDEX_HTML = r"""<!doctype html>
       .log { min-height: 55vh; max-height: 62vh; }
       .field-row, .format-row, .series-inline, .inline { grid-template-columns: 1fr; }
       .inline button { width: 100%; }
-      input, select, textarea { min-height: 42px; font-size: 15px; }
+      input, select, textarea, .custom-select-trigger { min-height: 42px; font-size: 15px; }
       .cover-row { grid-template-columns: 1fr; }
       .cover-box { width: min(100%, 220px); height: auto; aspect-ratio: 1; margin: 0 auto; }
       .cover-meta { margin-bottom: 6px; }
@@ -2493,6 +2568,12 @@ INDEX_HTML = r"""<!doctype html>
     const seriesModal = document.getElementById('seriesModal');
     const seriesNameInput = document.getElementById('seriesNameInput');
     const seriesNumberInput = document.getElementById('seriesNumberInput');
+    const customSelectPopover = document.createElement('div');
+    customSelectPopover.id = 'customSelectPopover';
+    customSelectPopover.className = 'custom-select-popover';
+    customSelectPopover.setAttribute('role', 'listbox');
+    document.body.appendChild(customSelectPopover);
+    let customSelectOwner = null;
     let authors = [];
     let anchors = [];
     let teams = ['RL'];
@@ -2550,7 +2631,7 @@ INDEX_HTML = r"""<!doctype html>
           const section = el.closest?.('.section');
           if (section) section.classList.add('mobile-expanded');
           el.classList.add('field-error');
-          firstEl ||= el;
+          firstEl ||= el._customSelectTrigger || el;
         }
         missing.push(field.label);
       }
@@ -2616,7 +2697,187 @@ INDEX_HTML = r"""<!doctype html>
         option.textContent = item.label;
         select.appendChild(option);
       });
+      select._customSelectSync?.();
     }
+
+    function syncCustomSelect(select) {
+      const trigger = select?._customSelectTrigger;
+      if (!trigger) return;
+      const value = trigger.querySelector('.custom-select-value');
+      const selected = select.options[select.selectedIndex];
+      value.textContent = selected?.textContent || '请选择';
+      trigger.disabled = select.disabled;
+      trigger.title = selected?.textContent || '';
+    }
+
+    function syncAllCustomSelects() {
+      document.querySelectorAll('select.custom-select-native').forEach(syncCustomSelect);
+    }
+
+    function closeCustomSelect({ restoreFocus = false } = {}) {
+      if (!customSelectOwner) return;
+      const { trigger } = customSelectOwner;
+      trigger.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+      customSelectPopover.classList.remove('open');
+      customSelectPopover.innerHTML = '';
+      customSelectPopover.removeAttribute('data-side');
+      customSelectOwner = null;
+      if (restoreFocus) trigger.focus();
+    }
+
+    function positionCustomSelect() {
+      if (!customSelectOwner) return;
+      const rect = customSelectOwner.trigger.getBoundingClientRect();
+      const viewportPad = 12;
+      const gap = 6;
+      const width = Math.min(Math.max(rect.width, 220), window.innerWidth - viewportPad * 2);
+      customSelectPopover.style.width = `${width}px`;
+      customSelectPopover.style.visibility = 'hidden';
+      customSelectPopover.classList.add('open');
+      const desiredHeight = Math.min(customSelectPopover.scrollHeight, 320);
+      const spaceBelow = window.innerHeight - rect.bottom - viewportPad - gap;
+      const spaceAbove = rect.top - viewportPad - gap;
+      const side = spaceBelow >= Math.min(desiredHeight, 190) || spaceBelow >= spaceAbove ? 'bottom' : 'top';
+      const available = side === 'bottom' ? spaceBelow : spaceAbove;
+      const height = Math.min(desiredHeight, Math.max(110, available));
+      const left = Math.min(Math.max(viewportPad, rect.left), window.innerWidth - width - viewportPad);
+      const top = side === 'bottom' ? rect.bottom + gap : rect.top - height - gap;
+      customSelectPopover.dataset.side = side;
+      customSelectPopover.style.left = `${left}px`;
+      customSelectPopover.style.top = `${Math.max(viewportPad, top)}px`;
+      customSelectPopover.style.maxHeight = `${height}px`;
+      customSelectPopover.style.visibility = '';
+    }
+
+    function focusCustomSelectOption(targetIndex) {
+      const options = [...customSelectPopover.querySelectorAll('.custom-select-option:not(:disabled)')];
+      if (!options.length) return;
+      const current = options.indexOf(document.activeElement);
+      const selected = options.findIndex(option => option.classList.contains('selected'));
+      let index = current >= 0 ? current : Math.max(0, selected);
+      if (targetIndex === 'first') index = 0;
+      else if (targetIndex === 'last') index = options.length - 1;
+      else index = Math.min(options.length - 1, Math.max(0, index + targetIndex));
+      options.forEach(option => { option.tabIndex = -1; });
+      options[index].tabIndex = 0;
+      options[index].focus();
+      options[index].scrollIntoView({ block: 'nearest' });
+    }
+
+    function openCustomSelect(select, trigger, { focusMenu = false } = {}) {
+      if (customSelectOwner?.select === select) {
+        closeCustomSelect();
+        return;
+      }
+      closeCustomSelect();
+      customSelectOwner = { select, trigger };
+      customSelectPopover.innerHTML = '';
+      [...select.options].forEach(nativeOption => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'custom-select-option';
+        option.textContent = nativeOption.textContent;
+        option.disabled = nativeOption.disabled;
+        option.tabIndex = nativeOption.selected ? 0 : -1;
+        option.setAttribute('role', 'option');
+        option.setAttribute('aria-selected', String(nativeOption.selected));
+        if (nativeOption.selected) option.classList.add('selected');
+        option.onclick = event => {
+          event.stopPropagation();
+          select.value = nativeOption.value;
+          select.dispatchEvent(new Event('input', { bubbles: true }));
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          syncCustomSelect(select);
+          closeCustomSelect({ restoreFocus: true });
+        };
+        customSelectPopover.appendChild(option);
+      });
+      trigger.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+      positionCustomSelect();
+      requestAnimationFrame(() => {
+        const selected = customSelectPopover.querySelector('.custom-select-option.selected');
+        selected?.scrollIntoView({ block: 'nearest' });
+        if (focusMenu) (selected || customSelectPopover.querySelector('.custom-select-option:not(:disabled)'))?.focus();
+      });
+    }
+
+    function enhanceSelect(select) {
+      if (select.dataset.customSelect === 'true') return;
+      const shell = document.createElement('div');
+      shell.className = 'custom-select';
+      select.parentNode.insertBefore(shell, select);
+      shell.appendChild(select);
+      select.dataset.customSelect = 'true';
+      select.classList.add('custom-select-native');
+      select.tabIndex = -1;
+
+      const trigger = document.createElement('button');
+      trigger.type = 'button';
+      trigger.className = 'custom-select-trigger';
+      trigger.setAttribute('aria-haspopup', 'listbox');
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.setAttribute('aria-controls', customSelectPopover.id);
+      trigger.innerHTML = '<span class="custom-select-value"></span><span class="custom-select-arrow" aria-hidden="true"></span>';
+      shell.appendChild(trigger);
+      select._customSelectTrigger = trigger;
+      select._customSelectSync = () => syncCustomSelect(select);
+      syncCustomSelect(select);
+
+      select.addEventListener('change', () => syncCustomSelect(select));
+      new MutationObserver(() => syncCustomSelect(select)).observe(select, {
+        childList: true, subtree: true, attributes: true,
+      });
+      trigger.onclick = event => {
+        event.stopPropagation();
+        openCustomSelect(select, trigger);
+      };
+      trigger.onkeydown = event => {
+        if (!['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) return;
+        event.preventDefault();
+        if (customSelectOwner?.select !== select) openCustomSelect(select, trigger, { focusMenu: true });
+        else if (event.key === 'ArrowDown') focusCustomSelectOption(1);
+        else if (event.key === 'ArrowUp') focusCustomSelectOption(-1);
+      };
+    }
+
+    function initCustomSelects() {
+      document.querySelectorAll('select').forEach(enhanceSelect);
+    }
+
+    customSelectPopover.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeCustomSelect({ restoreFocus: true });
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        focusCustomSelectOption(1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        focusCustomSelectOption(-1);
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        focusCustomSelectOption('first');
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        focusCustomSelectOption('last');
+      }
+    });
+    document.addEventListener('pointerdown', event => {
+      if (!customSelectOwner) return;
+      if (customSelectPopover.contains(event.target) || customSelectOwner.trigger.contains(event.target)) return;
+      closeCustomSelect();
+    }, true);
+    document.addEventListener('focusin', event => {
+      if (!customSelectOwner) return;
+      if (customSelectPopover.contains(event.target) || customSelectOwner.trigger.contains(event.target)) return;
+      closeCustomSelect();
+    });
+    document.addEventListener('scroll', event => {
+      if (customSelectOwner && !customSelectPopover.contains(event.target)) positionCustomSelect();
+    }, true);
+    window.addEventListener('resize', () => customSelectOwner && positionCustomSelect());
 
     async function loadOptions() {
       const { options } = await api('/api/options');
@@ -2700,6 +2961,7 @@ INDEX_HTML = r"""<!doctype html>
       renderTags();
       previewCover();
       clearValidationErrors();
+      syncAllCustomSelects();
     }
 
     function renderPeople(pool, values, removeHandler, options = {}) {
@@ -2900,6 +3162,7 @@ INDEX_HTML = r"""<!doctype html>
       currentRawMetadata = meta.raw || {};
       renderTags();
       previewCover();
+      syncAllCustomSelects();
       toast('元数据已应用');
     }
 
@@ -3020,6 +3283,7 @@ INDEX_HTML = r"""<!doctype html>
       renderTags();
       previewCover();
       clearValidationErrors();
+      syncAllCustomSelects();
       toast('已清空左侧编辑区');
     }
 
@@ -3475,6 +3739,7 @@ INDEX_HTML = r"""<!doctype html>
 
     (async function init() {
       await loadOptions();
+      initCustomSelects();
       await loadConfig();
       await refreshStatus();
       setInterval(() => refreshStatus().catch(() => {}), 1500);
