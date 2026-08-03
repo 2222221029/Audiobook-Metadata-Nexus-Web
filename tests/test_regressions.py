@@ -6,10 +6,29 @@ from unittest.mock import patch
 
 from metadata_helpers import build_output_folder_name
 from processor import load_operation_snapshot, restore_operation_snapshot, save_operation_snapshot
-from docker_web import collect_tags_and_year_from_payload, collect_ximalaya_app_tags, fetch_api_metadata
+from docker_web import INDEX_HTML, collect_tags_and_year_from_payload, collect_ximalaya_app_tags, fetch_api_metadata
 
 
 class RegressionTests(unittest.TestCase):
+    def test_directory_picker_double_click_does_not_select_text(self):
+        self.assertIn("-webkit-user-select: none; user-select: none", INDEX_HTML)
+        self.assertIn("if (event.detail > 1) event.preventDefault()", INDEX_HTML)
+        self.assertIn("window.getSelection()?.removeAllRanges()", INDEX_HTML)
+
+    def test_dark_select_options_have_readable_native_colours(self):
+        self.assertIn('html[data-theme="dark"] { color-scheme: dark; }', INDEX_HTML)
+        self.assertIn("select option, select optgroup", INDEX_HTML)
+        self.assertIn("background-color: var(--surface)", INDEX_HTML)
+        self.assertIn("select option:checked", INDEX_HTML)
+
+    def test_coloured_button_hover_keeps_its_gradient(self):
+        self.assertIn("background-color: var(--surface-2)", INDEX_HTML)
+        for class_name in ("btn-primary", "btn-green", "btn-amber", "btn-red", "btn-indigo"):
+            selector = f".{class_name}:hover:not(:disabled)"
+            start = INDEX_HTML.rindex(selector)
+            rule = INDEX_HTML[start:INDEX_HTML.index("}", start)]
+            self.assertIn("background: linear-gradient", rule, class_name)
+
     def test_ximalaya_app_show_tags_are_collected(self):
         payload = {
             "data": {

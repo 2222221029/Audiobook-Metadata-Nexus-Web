@@ -1505,6 +1505,8 @@ INDEX_HTML = r"""<!doctype html>
       --grad-h1-start:#1a1f3a;
       --modal-mask:   rgba(0,0,0,.42);
     }
+    html[data-theme="dark"] { color-scheme: dark; }
+    html[data-theme="light"] { color-scheme: light; }
 
     /* ══════════════════════════════════════════════
        SHARED  —  radius / spacing constants
@@ -1548,7 +1550,10 @@ INDEX_HTML = r"""<!doctype html>
       white-space: nowrap; letter-spacing: .01em;
     }
     button:hover:not(:disabled) {
-      background: var(--surface-2); border-color: var(--border-strong);
+      /* Only change the colour layer here. Using the `background` shorthand
+         resets a coloured button's gradient and makes it look white in the
+         light theme. */
+      background-color: var(--surface-2); border-color: var(--border-strong);
       transform: translateY(-1px); box-shadow: var(--shadow-sm);
     }
     .btn-primary:hover:not(:disabled), .btn-green:hover:not(:disabled),
@@ -1561,29 +1566,46 @@ INDEX_HTML = r"""<!doctype html>
       border-color: var(--primary-glow); color: #fff;
       box-shadow: 0 0 22px var(--primary-glow);
     }
-    .btn-primary:hover:not(:disabled) { box-shadow: 0 4px 28px var(--primary-glow); filter: brightness(1.08); }
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--primary), #8b5cf6);
+      box-shadow: 0 4px 28px var(--primary-glow); filter: brightness(1.08);
+    }
     .btn-green {
       background: linear-gradient(135deg, var(--success), #047857);
       border-color: var(--success-glow); color: #fff;
       box-shadow: 0 0 18px var(--success-glow);
     }
-    .btn-green:hover:not(:disabled) { box-shadow: 0 4px 26px var(--success-glow); filter: brightness(1.08); }
+    .btn-green:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--success), #047857);
+      box-shadow: 0 4px 26px var(--success-glow); filter: brightness(1.08);
+    }
     .btn-amber {
       background: linear-gradient(135deg, var(--warning), #b45309);
       border-color: var(--warning-glow); color: #fff;
       box-shadow: 0 0 16px var(--warning-glow);
+    }
+    .btn-amber:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--warning), #b45309);
+      box-shadow: 0 4px 24px var(--warning-glow); filter: brightness(1.08);
     }
     .btn-red {
       background: linear-gradient(135deg, var(--danger), #b91c1c);
       border-color: var(--danger-glow); color: #fff;
       box-shadow: 0 0 16px var(--danger-glow);
     }
+    .btn-red:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--danger), #b91c1c);
+      box-shadow: 0 4px 24px var(--danger-glow); filter: brightness(1.08);
+    }
     .btn-indigo {
       background: linear-gradient(135deg, #4f46e5, #7c3aed);
       border-color: rgba(79,70,229,.45); color: #fff;
       box-shadow: 0 0 16px rgba(79,70,229,.28);
     }
-    .btn-indigo:hover:not(:disabled) { box-shadow: 0 4px 24px rgba(79,70,229,.4); filter: brightness(1.08); }
+    .btn-indigo:hover:not(:disabled) {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      box-shadow: 0 4px 24px rgba(79,70,229,.4); filter: brightness(1.08);
+    }
     .quiet-button {
       background: var(--glass); border-color: var(--border); color: var(--text-2);
     }
@@ -1742,14 +1764,22 @@ INDEX_HTML = r"""<!doctype html>
       background-color: var(--input-bg);
       padding-right: 30px;
     }
+    select option, select optgroup {
+      background-color: var(--surface);
+      color: var(--text);
+    }
+    select option:checked {
+      background-color: var(--primary);
+      color: #fff;
+    }
     textarea { min-height: 130px; resize: none; line-height: 1.6; }
     input:focus, select:focus, textarea:focus {
-      border-color: var(--primary); background: var(--primary-bg);
+      border-color: var(--primary); background-color: var(--primary-bg);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
     }
     input.field-error, select.field-error, textarea.field-error, .chips.field-error {
       border-color: var(--danger);
-      background: var(--danger-bg);
+      background-color: var(--danger-bg);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
     }
     input[type="checkbox"] {
@@ -2023,6 +2053,7 @@ INDEX_HTML = r"""<!doctype html>
       padding: 10px 12px; border: 1px solid var(--border); margin-bottom: 6px;
       background: var(--surface-3); cursor: pointer; border-radius: var(--radius-xs);
       transition: border-color .14s ease, background .14s ease, color .14s ease; color: var(--text-2);
+      -webkit-user-select: none; user-select: none;
     }
     .dir-item:hover { border-color: var(--border-med); background: var(--surface-2); color: var(--text); }
     .dir-item.selected { border-color: var(--primary); background: var(--primary-bg); color: var(--text); }
@@ -3190,8 +3221,20 @@ INDEX_HTML = r"""<!doctype html>
         const item = document.createElement('div');
         item.className = 'dir-item';
         item.innerHTML = `<strong>${dir.name}</strong><span>${dir.has_audio ? '🎵 音频' : '📁 目录'}</span>`;
-        item.onclick = () => { selectedDir = dir.path; [...list.children].forEach(x => x.classList.remove('selected')); item.classList.add('selected'); };
-        item.ondblclick = () => openDirModal(dir.path);
+        item.onmousedown = event => {
+          if (event.detail > 1) event.preventDefault();
+        };
+        item.onclick = () => {
+          selectedDir = dir.path;
+          [...list.children].forEach(x => x.classList.remove('selected'));
+          item.classList.add('selected');
+        };
+        item.ondblclick = event => {
+          event.preventDefault();
+          event.stopPropagation();
+          window.getSelection()?.removeAllRanges();
+          openDirModal(dir.path).catch(error => toast(error.message));
+        };
         list.appendChild(item);
       });
       document.getElementById('dirModal').classList.add('show');
