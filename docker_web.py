@@ -22,6 +22,8 @@ from api_clients import (
     ximalaya_api,
     yunting_api,
     search_platform_metadata,
+    ypshuo_author_by_title,
+    ypshuo_author_candidates,
 )
 from config import CATEGORY_MAP, FFMPEG_PATH, FFPROBE_PATH, NETWORK_VERIFY_SSL, get_platform_cookies, get_platform_options, set_platform_cookies
 from network_utils import clean_html_tags, extract_bytedance_snowflake_year, fetch_share_page_html, get_safe_session, parse_fanqie_share_html, parse_qidian_share_html
@@ -133,7 +135,7 @@ def build_processing_preview(params):
         bitrate_part, params.get("team", "RL"),
     )
     output_path = folder.parent / output_name
-    return {
+    normalized = {
         "input_folder": str(folder), "audio_count": len(files),
         "formats": sorted(formats), "output_name": output_name,
         "output_path": str(output_path), "output_exists": output_path.exists(),
@@ -577,6 +579,14 @@ def normalize_metadata(data, platform=""):
         "platform": platform or data.get("_platform") or "",
         "raw": data,
     }
+    if not normalized["author"] and normalized["title"]:
+        match = ypshuo_author_by_title(normalized["title"])
+        if match.get("author"):
+            normalized["author"] = match["author"]
+            normalized["authors"] = [match["author"]]
+            normalized["raw"] = dict(normalized["raw"] or {})
+            normalized["raw"]["ypshuo_author_match"] = match
+    return normalized
 
 
 
@@ -1520,6 +1530,11 @@ class RequestHandler(BaseHTTPRequestHandler):
                 page = max(1, int(payload.get("page") or 1))
                 results, has_next = search_platform_metadata(payload.get("api_source"), payload.get("keyword"), page=page)
                 return json_response(self, {"ok": True, "results": results, "page": page, "has_next": has_next})
+            if path == "/api/search-author":
+                title = str(payload.get("title") or "").strip()
+                if not title:
+                    raise ValueError("请先填写专辑标题")
+                return json_response(self, {"ok": True, "results": ypshuo_author_candidates(title)})
             if path == "/api/fetch-link":
                 meta = fetch_link_metadata(payload.get("url"), payload.get("platform"))
                 return json_response(self, {"ok": True, "metadata": meta})
@@ -1992,6 +2007,22 @@ INDEX_HTML = r"""<!doctype html>
       display: block; font-size: 11px; font-weight: 700; color: var(--text-3);
       margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em;
     }
+    .field-label-row {
+      min-height: 27px; display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; margin-bottom: 6px;
+    }
+    .field-label-row label { min-width: 0; margin-bottom: 0; }
+    .field-mini-action {
+      flex: 0 0 auto; min-height: 26px; padding: 0 10px;
+      border-radius: 99px; border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+      background: color-mix(in srgb, var(--primary) 12%, var(--surface-2));
+      color: var(--primary-light); box-shadow: none;
+      font-size: 11px; font-weight: 700; letter-spacing: 0;
+    }
+    .field-mini-action:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--primary) 20%, var(--surface-2));
+      border-color: var(--primary); color: var(--primary-light); box-shadow: none;
+    }
     input, select, textarea {
       width: 100%; border: 1px solid var(--border); outline: none;
       background: var(--input-bg); color: var(--text);
@@ -2178,6 +2209,13 @@ INDEX_HTML = r"""<!doctype html>
     .search-result img { width: 58px; height: 58px; object-fit: cover; border-radius: 8px; background: var(--surface-3); }
     .search-result-title { display:block; overflow:hidden; font-weight: 700; line-height:1.45; white-space:normal; overflow-wrap:anywhere; }
     .search-result-meta { margin-top: 3px; color: var(--text-3); font-size: 12px; }
+    .author-search-result { grid-template-columns: 44px minmax(0, 1fr) auto; }
+    .author-result-avatar {
+      width: 44px; height: 44px; display: grid; place-items: center;
+      border-radius: 13px; color: #fff; font-size: 17px; font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), #8b5cf6);
+      box-shadow: 0 6px 16px var(--primary-glow);
+    }
     .search-pagination { display:flex; justify-content:space-between; gap:8px; margin-top:10px; }
     .source-action { display:flex; flex-direction:column; justify-content:flex-end; }
     .action-stack { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
@@ -2630,6 +2668,7 @@ INDEX_HTML = r"""<!doctype html>
           </div>
           <div id="titleSearchBackdrop" class="search-results-backdrop" hidden></div>
           <div id="titleSearchResults" class="search-results" role="dialog" aria-modal="true" hidden></div>
+          <div id="authorSearchResults" class="search-results" role="dialog" aria-modal="true" hidden></div>
         </div>
 
         <div class="section">
@@ -2638,7 +2677,10 @@ INDEX_HTML = r"""<!doctype html>
             <div><label>专辑标题 *</label><input name="title" placeholder="书名" /></div>
             <div><label>副标题</label><input name="subtitle" placeholder="可选" /></div>
             <div>
-              <label>原著作者 *（输入后按回车确认）</label>
+              <div class="field-label-row">
+                <label>原著作者 *（输入后按回车确认）</label>
+                <button type="button" class="field-mini-action" id="fetchAuthorBtn">按书名获取作者</button>
+              </div>
               <div class="chips editable" id="authorPool"></div>
               <input type="hidden" name="author" />
             </div>
@@ -3414,10 +3456,18 @@ INDEX_HTML = r"""<!doctype html>
       });
     });
 
-    async function loadConfig() {
+    async function loadConfig({ startup = false } = {}) {
       const data = await api('/api/config');
-      fillForm(data.params);
-      toast('配置已加载');
+      const params = {...(data.params || {})};
+      if (startup) {
+        params.platform = '';
+        params.category = '';
+        params.finished = '';
+        params.year = '';
+        params.team = 'RL';
+      }
+      fillForm(params);
+      if (!startup) toast('配置已加载');
     }
 
     async function saveConfig() {
@@ -3481,6 +3531,76 @@ INDEX_HTML = r"""<!doctype html>
         const data = await api('/api/fetch-link', { method: 'POST', body: JSON.stringify({platform: form.link_platform.value, url: form.link_url.value}), timeoutMs: 120000 });
         applyMetadata(data.metadata);
         toast('元数据获取成功');
+      } finally {
+        setButtonBusy(btn, false);
+      }
+    }
+
+    function applyAuthorCandidate(item) {
+      const author = String(item?.author || '').trim();
+      if (!author) return;
+      const existed = authors.includes(author);
+      if (!existed) authors.push(author);
+      renderAuthors();
+      closeAuthorSearchResults();
+      toast(existed ? `作者“${author}”已存在` : `已获取作者：${author}`);
+    }
+
+    function renderAuthorSearchResults(results, title) {
+      const box = document.getElementById('authorSearchResults');
+      const backdrop = document.getElementById('titleSearchBackdrop');
+      box.replaceChildren();
+      const head = document.createElement('div');
+      head.className = 'search-dialog-head';
+      head.innerHTML = '<strong>选择原著作者</strong><button type="button" class="search-dialog-close" aria-label="关闭">×</button>';
+      head.querySelector('button').onclick = closeAuthorSearchResults;
+      box.appendChild(head);
+      results.forEach(item => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'search-result author-search-result';
+        const avatar = document.createElement('span');
+        avatar.className = 'author-result-avatar';
+        avatar.textContent = String(item.author || '?').trim().slice(0, 1);
+        const body = document.createElement('span');
+        const authorName = document.createElement('span');
+        authorName.className = 'search-result-title';
+        authorName.textContent = item.author || '未知作者';
+        const meta = document.createElement('span');
+        meta.className = 'search-result-meta';
+        const sourceName = item.source === 'youshu' ? '备用书库' : '阅评说';
+        meta.textContent = [item.title || title, sourceName].filter(Boolean).join(' · ');
+        body.append(authorName, meta);
+        const pick = document.createElement('span');
+        pick.textContent = '填入';
+        button.append(avatar, body, pick);
+        button.onclick = () => applyAuthorCandidate(item);
+        box.appendChild(button);
+      });
+      box.hidden = false;
+      backdrop.hidden = false;
+    }
+
+    function closeAuthorSearchResults() {
+      document.getElementById('authorSearchResults').hidden = true;
+      document.getElementById('titleSearchBackdrop').hidden = true;
+    }
+
+    async function fetchAuthorByTitle() {
+      const btn = document.getElementById('fetchAuthorBtn');
+      const title = form.elements.title.value.trim();
+      if (!title) return toast('请先填写专辑标题');
+      setButtonBusy(btn, true, '查询中...');
+      try {
+        const data = await api('/api/search-author', {
+          method: 'POST',
+          body: JSON.stringify({title}),
+          timeoutMs: 25000,
+        });
+        const results = data.results || [];
+        if (!results.length) return toast('未找到可信的作者匹配，现有作者未修改');
+        if (results.length === 1) return applyAuthorCandidate(results[0]);
+        renderAuthorSearchResults(results, title);
       } finally {
         setButtonBusy(btn, false);
       }
@@ -4194,10 +4314,17 @@ INDEX_HTML = r"""<!doctype html>
     document.getElementById('saveConfigBtn').onclick = () => saveConfig().catch(e => toast(e.message));
     document.getElementById('loadConfigBtn').onclick = () => loadConfig().catch(e => toast(e.message));
     document.getElementById('fetchBtn').onclick = () => fetchMetadata().catch(e => toast(e.message));
+    document.getElementById('fetchAuthorBtn').onclick = () => fetchAuthorByTitle().catch(e => toast(e.message));
     document.getElementById('searchTitleBtn').onclick = () => searchByTitle().catch(e => toast(e.message));
-    document.getElementById('titleSearchBackdrop').onclick = closeTitleSearchResults;
+    document.getElementById('titleSearchBackdrop').onclick = () => {
+      closeTitleSearchResults();
+      closeAuthorSearchResults();
+    };
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') closeTitleSearchResults();
+      if (event.key === 'Escape') {
+        closeTitleSearchResults();
+        closeAuthorSearchResults();
+      }
     });
     document.getElementById('addQueueBtn').onclick = () => addQueueFast().catch(e => toast(e.message));
     document.getElementById('startQueueBtn').onclick = () => startQueue().catch(e => toast(e.message));
@@ -4230,7 +4357,7 @@ INDEX_HTML = r"""<!doctype html>
     (async function init() {
       await loadOptions();
       initCustomSelects();
-      await loadConfig();
+      await loadConfig({ startup: true });
       await refreshStatus();
       scheduleStatusPoll();
     })().catch(e => toast(e.message));

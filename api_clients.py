@@ -6,6 +6,7 @@ import time
 import uuid
 import codecs
 import html
+from functools import lru_cache
 import requests
 from config import get_platform_cookies, FANQIE_SHARE_ID, FANQIE_X_BOGUS, FANQIE_SIGNATURE
 from network_utils import get_safe_session, _debug_log, clean_html_tags, extract_bytedance_snowflake_year
@@ -667,6 +668,84 @@ def search_platform_metadata(platform: str, keyword: str, page: int = 1, limit: 
     else:
         raise ValueError(f"{platform} 暂未接入书名搜索接口")
     return results[:limit], len(results) >= limit
+
+
+def _normalize_ypshuo_title(value: str) -> str:
+    value = html.unescape(re.sub(r"<[^>]+>", "", str(value or ""))).strip()
+    value = re.split(r"[|｜]", value, maxsplit=1)[0]
+    value = re.sub(r"[（(](?:有声|演播|播讲|多人|精品|全集|完结|更新)[^）)]*[）)]$", "", value).strip()
+    value = re.sub(r"^(?:有声小说|有声书|精品有声剧)[：:·\s]*", "", value)
+    return re.sub(r"[\s《》<>·•:：,，。.!！?？_\-—]", "", value).lower()
+
+
+def _select_ypshuo_author(title: str, candidates: list[dict]) -> dict:
+    exact = _matching_ypshuo_authors(title, candidates)
+    authors = {item["author"] for item in exact}
+    return exact[0] if exact and len(authors) == 1 else {}
+
+
+def _matching_ypshuo_authors(title: str, candidates: list[dict]) -> list[dict]:
+    wanted = _normalize_ypshuo_title(title)
+    exact = []
+    seen_authors = set()
+    for item in candidates:
+        author = str(item.get("author") or item.get("author_name") or "").strip()
+        item_title = str(item.get("title") or item.get("novel_name") or "").strip()
+        author_key = re.sub(r"\s+", "", author).lower()
+        if wanted and author and author_key not in seen_authors and _normalize_ypshuo_title(item_title) == wanted:
+            exact.append({"title": item_title, "author": author, "id": str(item.get("id") or ""), "source": item.get("source") or "ypshuo"})
+            seen_authors.add(author_key)
+    return exact
+
+
+def _parse_youshu_author_candidates(page_html: str) -> list[dict]:
+    candidates = []
+    blocks = re.split(r'<div\s+class=["\']c_row["\']\s*>', page_html, flags=re.IGNORECASE)[1:]
+    if not blocks:
+        blocks = [page_html]
+    for block in blocks:
+        title_match = re.search(r'class=["\']c_subject["\'][\s\S]*?<a[^>]*>([\s\S]*?)</a>', block, re.IGNORECASE)
+        author_match = re.search(r'作者\s*[：:]\s*</span>\s*<span[^>]*class=["\']c_value["\'][^>]*>([\s\S]*?)</span>', block, re.IGNORECASE)
+        if not author_match:
+            author_match = re.search(r'作者\s*[：:][\s\S]{0,300}?<a[^>]*>([^<]+)</a>', block, re.IGNORECASE)
+        if title_match and author_match:
+            item_id = (re.search(r'/book/(\d+)', block) or ["", ""])[1]
+            candidates.append({"id": item_id, "title": html.unescape(re.sub(r"<[^>]+>", "", title_match.group(1))).strip(), "author": html.unescape(re.sub(r"<[^>]+>", "", author_match.group(1))).strip(), "source": "youshu"})
+    return candidates
+
+
+@lru_cache(maxsize=256)
+def ypshuo_author_candidates(title: str) -> list[dict]:
+    """Return distinct author candidates whose normalized title is an exact match."""
+    title = str(title or "").strip()
+    if not title:
+        return []
+    session = get_safe_session()
+    headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json, text/plain, */*", "Referer": "https://m.ypshuo.com/"}
+    try:
+        response = session.get("https://m.ypshuo.com/api/novel/search", params={"keyword": title, "searchType": 1, "page": 1}, headers=headers, timeout=8)
+        payload = response.json()
+        books = ((payload.get("data") or {}).get("data") or []) if str(payload.get("code")) == "00" else []
+        matches = _matching_ypshuo_authors(title, [{**book, "source": "ypshuo"} for book in books if isinstance(book, dict)])
+        if matches:
+            return matches
+    except Exception as exc:
+        _debug_log(f"[阅评说作者补全] 主 API 失败: {exc}")
+    try:
+        response = session.post("https://www.youshu.me/modules/article/search.php", data={"searchtype": "all", "searchkey": title, "t_btnsearch": ""}, headers={**headers, "Referer": "https://www.youshu.me/"}, timeout=8)
+        response.encoding = response.apparent_encoding or response.encoding
+        return _matching_ypshuo_authors(title, _parse_youshu_author_candidates(response.text))
+    except Exception as exc:
+        _debug_log(f"[阅评说作者补全] 备用站点失败: {exc}")
+        return []
+
+
+@lru_cache(maxsize=256)
+def ypshuo_author_by_title(title: str) -> dict:
+    """Resolve an original novel author only when candidates agree."""
+    candidates = ypshuo_author_candidates(str(title or "").strip())
+    authors = {item["author"] for item in candidates}
+    return candidates[0] if candidates and len(authors) == 1 else {}
 
 
 def netease_ting_api(album_id: str) -> dict:

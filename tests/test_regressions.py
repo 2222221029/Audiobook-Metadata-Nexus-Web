@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from api_clients import _matching_ypshuo_authors
 from metadata_helpers import build_output_folder_name
 from processor import load_operation_snapshot, restore_operation_snapshot, save_operation_snapshot
 from docker_web import (
@@ -25,7 +26,7 @@ class RegressionTests(unittest.TestCase):
         self.assertIn('"platform": ""', DOCKER_WEB_SOURCE)
         self.assertIn('"year": ""', DOCKER_WEB_SOURCE)
         self.assertIn('"finished": ""', DOCKER_WEB_SOURCE)
-        self.assertIn('"team": ""', DOCKER_WEB_SOURCE)
+        self.assertIn('"team": "RL"', DOCKER_WEB_SOURCE)
         self.assertIn("'请选择发布平台'", INDEX_HTML)
         self.assertIn("'请选择专辑分类'", INDEX_HTML)
         self.assertIn("'请选择专辑状态'", INDEX_HTML)
@@ -100,6 +101,22 @@ class RegressionTests(unittest.TestCase):
             start = INDEX_HTML.rindex(selector)
             rule = INDEX_HTML[start:INDEX_HTML.index("}", start)]
             self.assertIn("background: linear-gradient", rule, class_name)
+
+    def test_author_lookup_button_and_dialog_are_present(self):
+        self.assertIn('id="fetchAuthorBtn"', INDEX_HTML)
+        self.assertIn('id="authorSearchResults"', INDEX_HTML)
+        self.assertIn("function fetchAuthorByTitle()", INDEX_HTML)
+        self.assertIn("'/api/search-author'", INDEX_HTML)
+
+    def test_ypshuo_author_candidates_require_exact_title_and_are_distinct(self):
+        candidates = [
+            {"id": "1", "novel_name": "我不是戏神", "author_name": "三九音域"},
+            {"id": "2", "novel_name": "我不是戏神", "author_name": "三九音域"},
+            {"id": "3", "novel_name": "我不是戏神", "author_name": "另一作者"},
+            {"id": "4", "novel_name": "我不是戏神前传", "author_name": "错误作者"},
+        ]
+        matches = _matching_ypshuo_authors("我不是戏神", candidates)
+        self.assertEqual([item["author"] for item in matches], ["三九音域", "另一作者"])
 
     def test_ximalaya_app_show_tags_are_collected(self):
         payload = {
