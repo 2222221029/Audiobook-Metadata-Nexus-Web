@@ -585,6 +585,8 @@ def fetch_api_metadata(api_source, api_id):
     api_id = (api_id or "").strip()
     if not api_id:
         raise ValueError("请先填写平台专辑 ID")
+    if api_source in ("番茄畅听", "起点听书") and re.match(r"^https?://", api_id, re.IGNORECASE):
+        return fetch_link_metadata(api_id, api_source)
     if api_source == "喜马拉雅":
         raw = ximalaya_api("album", api_id)
         data = normalize_ximalaya_payload(raw)
@@ -630,8 +632,8 @@ def parse_fanqie_get_info_response(data):
     title = (api_book.get("book_name") or api_book.get("title") or "").strip()
     if not title:
         return {}
-    tags_raw = api_book.get("tags") or ""
-    tags = [t.strip() for t in tags_raw.split(",") if t.strip()] if isinstance(tags_raw, str) else []
+    tags_raw = api_book.get("tags") or api_book.get("tag_list") or api_book.get("labels") or ""
+    tags = _fanqie_tags(tags_raw)
     creation_status = api_book.get("creation_status")
     finished = "完结" if creation_status is not None and str(creation_status) == "0" else "连载" if creation_status is not None else ""
     category = (api_book.get("category_info") or api_book.get("genre") or "").strip()
@@ -641,11 +643,12 @@ def parse_fanqie_get_info_response(data):
         "title": title,
         "name": title,
         "author": (api_book.get("author") or "").strip(),
-        "cover": api_book.get("thumb_url") or api_book.get("audio_thumb_uri") or "",
+        "cover": _fanqie_cover(api_book),
         "desc": (api_book.get("abstract") or "").strip(),
         "category": category,
         "finished": finished,
         "tags": tags,
+        "releaseDate": _fanqie_release_year(api_book),
     }
 
 
@@ -658,8 +661,8 @@ def parse_fanqie_audio_detail_response(data):
     title = (inner.get("book_name") or inner.get("original_book_name") or "").strip()
     if not title:
         return {}
-    tags_raw = inner.get("tags") or inner.get("pure_category_tags") or ""
-    tags = [t.strip() for t in tags_raw.split(",") if t.strip()] if isinstance(tags_raw, str) else []
+    tags_raw = inner.get("tags") or inner.get("pure_category_tags") or inner.get("tag_list") or inner.get("labels") or ""
+    tags = _fanqie_tags(tags_raw)
     category = (inner.get("category") or "").strip()
     if not category and tags:
         category = tags[0]
@@ -669,12 +672,62 @@ def parse_fanqie_audio_detail_response(data):
         "title": title,
         "name": title,
         "author": (inner.get("author") or "").strip(),
-        "cover": inner.get("thumb_url") or inner.get("audio_thumb_uri") or inner.get("audio_thumb_url_hd") or inner.get("horiz_thumb_url") or "",
+        "cover": _fanqie_cover(inner),
         "desc": (inner.get("abstract") or inner.get("book_abstract_v2") or "").strip(),
         "category": category,
         "finished": finished,
         "tags": tags,
+        "releaseDate": _fanqie_release_year(inner),
     }
+
+
+def _fanqie_tags(value):
+    if isinstance(value, str):
+        values = re.split(r"[,，、|\\n]", value)
+    elif isinstance(value, (list, tuple)):
+        values = value
+    else:
+        values = []
+    result = []
+    for item in values:
+        if isinstance(item, dict):
+            item = item.get("name") or item.get("tag_name") or item.get("tagName") or item.get("value") or ""
+        item = str(item).strip()
+        if item and item not in result:
+            result.append(item)
+    return result
+
+
+def _fanqie_cover(data):
+    for key in ("thumb_url", "audio_thumb_uri", "audio_thumb_url_hd", "audio_thumb_url", "horiz_thumb_url", "cover", "cover_url", "image_url"):
+        value = data.get(key)
+        if isinstance(value, dict):
+            value = value.get("url") or value.get("uri") or value.get("url_list", [""])[0]
+        if isinstance(value, list):
+            value = value[0] if value else ""
+        if value:
+            return str(value).strip()
+    return ""
+
+
+def _fanqie_release_year(data):
+    for key in ("publish_time", "published_time", "first_publish_time", "release_time", "create_time", "created_at", "update_time"):
+        value = data.get(key)
+        if value in (None, "", 0, "0"):
+            continue
+        text = str(value)
+        match = re.search(r"(19|20)\\d{2}", text)
+        if match:
+            return match.group(0)
+        try:
+            timestamp = float(value)
+            if timestamp > 1000000000000:
+                timestamp /= 1000
+            if 0 < timestamp < 4102444800:
+                return time.strftime("%Y", time.localtime(timestamp))
+        except (TypeError, ValueError, OverflowError):
+            pass
+    return ""
 
 
 def extract_fanqie_api_urls(html):
@@ -877,15 +930,21 @@ def fetch_link_metadata(url, platform):
     platform = (platform or "起点听书").strip()
     if not url:
         raise ValueError("请先填写分享链接")
-    html = fetch_share_page_html(url, timeout=15)
+    html = ""
+    data = {}
+    try:
+        html = fetch_share_page_html(url, timeout=15)
+    except Exception as exc:
+        _debug_log(f"[番茄分享页] 普通请求失败，转浏览器渲染: {exc}")
     if platform == "起点听书":
-        data = parse_qidian_share_html(html, url)
+        data = parse_qidian_share_html(html, url) if html else {}
     else:
-        data = parse_fanqie_share_html(html, url)
-        if not data or not data.get("title"):
-            static_api_data = fetch_fanqie_api_metadata_from_share_html(html, url)
-            if static_api_data:
-                data = static_api_data
+        if html:
+            data = parse_fanqie_share_html(html, url)
+            if not data or not data.get("title"):
+                static_api_data = fetch_fanqie_api_metadata_from_share_html(html, url)
+                if static_api_data:
+                    data = static_api_data
         if not data or not data.get("title"):
             rendered_data = fetch_fanqie_rendered_metadata(url)
             if rendered_data:
@@ -2507,8 +2566,8 @@ INDEX_HTML = r"""<!doctype html>
           </div>
           <div class="grid" style="margin-top:10px">
             <div>
-              <label>平台专辑 ID / 书名（可选）</label>
-              <div class="field-row"><select name="api_source"></select><input name="api_id" placeholder="输入专辑 ID 或书名" /></div>
+              <label>平台专辑 ID / 书名 / 分享链接（可选）</label>
+              <div class="field-row"><select name="api_source"></select><input name="api_id" placeholder="输入专辑 ID、书名或分享链接 URL" /></div>
             </div>
             <div class="source-action">
               <label>&nbsp;</label>
@@ -2516,14 +2575,6 @@ INDEX_HTML = r"""<!doctype html>
                 <button type="button" class="btn-primary" id="fetchBtn">获取元数据</button>
                 <button type="button" class="quiet-button" id="searchTitleBtn">按书名搜索</button>
               </div>
-            </div>
-            <div>
-              <label>链接搜索（起点 / 番茄）</label>
-              <div class="field-row"><select name="link_platform"></select><input name="link_url" placeholder="分享链接 URL" /></div>
-            </div>
-            <div class="source-action">
-              <label>&nbsp;</label>
-              <button type="button" class="btn-green" id="fetchLinkBtn" style="width:100%;min-height:40px">请求链接</button>
             </div>
           </div>
           <div id="titleSearchBackdrop" class="search-results-backdrop" hidden></div>
@@ -3075,7 +3126,6 @@ INDEX_HTML = r"""<!doctype html>
     async function loadOptions() {
       const { options } = await api('/api/options');
       optionList(form.api_source, options.api_sources);
-      optionList(form.link_platform, options.link_platforms);
       optionList(form.platform, options.platforms, v => ({value: v, label: v}), '请选择发布平台');
       optionList(form.category, options.categories, v => ({value: v.id, label: `${v.id} · ${v.name}`}), '请选择专辑分类');
       optionList(form.target_format, options.target_formats);
@@ -4098,7 +4148,6 @@ INDEX_HTML = r"""<!doctype html>
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape') closeTitleSearchResults();
     });
-    document.getElementById('fetchLinkBtn').onclick = () => fetchLink().catch(e => toast(e.message));
     document.getElementById('addQueueBtn').onclick = () => addQueueFast().catch(e => toast(e.message));
     document.getElementById('startQueueBtn').onclick = () => startQueue().catch(e => toast(e.message));
     document.getElementById('stopBtn').onclick = () => stopTask().catch(e => toast(e.message));
