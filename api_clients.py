@@ -273,10 +273,6 @@ def _fanqie_search_by_id(book_id: str) -> dict:
 def fanqie_api(album_id: str) -> dict:
     try:
         share_info = _fanqie_get_share_info(album_id)
-        if share_info and share_info.get("name"):
-            if share_info.get("chapter_count", 0) and not (share_info.get("desc") or share_info.get("info")):
-                share_info["desc"] = share_info["info"] = f"番茄畅听有声书，共{share_info['chapter_count']}集。"
-            return share_info
 
         session = get_safe_session()
         title, author, cover, desc, announcer, category, finished, tags, chapter_count = "", "", "", "", "", "", "", [], 0
@@ -298,6 +294,16 @@ def fanqie_api(album_id: str) -> dict:
                             title, author = t, (book_data.get("author") or book_data.get("author_name") or "").strip() or author
                             cover, desc = book_data.get("thumb_url") or book_data.get("cover") or cover, (book_data.get("abstract") or book_data.get("desc") or "").strip() or desc
                             category, announcer = (book_data.get("category") or book_data.get("category_name") or "").strip() or category, (book_data.get("anchor") or book_data.get("narrator") or "").strip() or announcer
+                            tags_raw = book_data.get("tags")
+                            if isinstance(tags_raw, str):
+                                parsed_tags = [part.strip() for part in re.split(r"[,，|]", tags_raw) if part.strip()]
+                            elif isinstance(tags_raw, list):
+                                parsed_tags = [str(item.get("name") or item.get("tag_name") or item.get("tagName") or "").strip() if isinstance(item, dict) else str(item).strip() for item in tags_raw]
+                            else:
+                                parsed_tags = []
+                            for tag in parsed_tags:
+                                if tag and tag not in tags:
+                                    tags.append(tag)
                             cs = book_data.get("creation_status")
                             if cs is not None and not finished: finished = "完结" if str(cs) == "1" else "连载"
                             break
@@ -311,6 +317,15 @@ def fanqie_api(album_id: str) -> dict:
                         if isinstance(vol, list): chapter_count += len(vol)
                         elif isinstance(vol, dict) and "chapterList" in vol: chapter_count += len(vol["chapterList"])
         except: pass
+        if not title:
+            if share_info and share_info.get("name"):
+                title = share_info.get("name") or title
+                author = share_info.get("author") or author
+                cover = share_info.get("cover") or share_info.get("bestCover") or cover
+                desc = share_info.get("desc") or share_info.get("info") or desc
+                category = share_info.get("category") or category
+                finished = share_info.get("finished") or finished
+                tags = share_info.get("tags") or tags
         if not title:
             hit = _fanqie_search_by_id(album_id)
             if hit:
@@ -367,10 +382,66 @@ def parse_qidian_getshare_json(json_str: str) -> dict | None:
         return {"name": title, "title": title, "album": title, "bestCover": cover, "cover": cover, "pic": cover, "author": author, "announcer": "", "artist": "", "desc": desc, "info": desc, "releaseDate": "", "category": category, "finished": finished}
     except Exception: return None
 
+def _qidian_plugin_detail(book_id: str) -> dict:
+    """Use the same public search/detail chain as qidian-scraper-wasm."""
+    session = get_safe_session()
+    headers = {
+        "AppId": "50",
+        "AreaId": "501000",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/132.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781",
+        "Accept": "application/json, text/plain, */*",
+        "Referer": "https://qidian.com/",
+    }
+    response = session.get(
+        f"https://qdcg.qidian.com/api/audio/detail?adid={book_id}&_csrfToken=",
+        headers=headers,
+        timeout=15,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if payload.get("Result") not in (None, 0, "0"):
+        raise ValueError(payload.get("Message") or "起点详情接口返回失败")
+    data = payload.get("Data") or {}
+    title = str(data.get("AudioName") or data.get("audioName") or "").strip()
+    if not title:
+        raise ValueError("起点详情接口没有返回书名")
+    tags = []
+    for item in data.get("Tags") or data.get("tags") or []:
+        if isinstance(item, dict):
+            tag = str(item.get("TagName") or item.get("tagName") or item.get("Name") or "").strip()
+        else:
+            tag = str(item).strip()
+        if tag and tag not in tags:
+            tags.append(tag)
+    category = str(data.get("CategoryName") or data.get("categoryName") or "").strip()
+    if category and category not in tags:
+        tags.append(category)
+    cover = str(data.get("CoverUrl") or data.get("coverUrl") or "").strip().replace("http://", "https://")
+    status = str(data.get("ActionStatus") or data.get("actionStatus") or "").strip()
+    finished = "完结" if "完结" in status else "连载" if status else ""
+    return {
+        "name": title, "title": title, "album": title,
+        "bestCover": cover, "cover": cover, "pic": cover,
+        "author": str(data.get("AuthorName") or data.get("authorName") or "").strip(),
+        "announcer": str(data.get("AnchorName") or data.get("anchorName") or "").strip(),
+        "artist": str(data.get("AnchorName") or data.get("anchorName") or "").strip(),
+        "desc": str(data.get("Intro") or data.get("intro") or data.get("Description") or "").strip(),
+        "info": str(data.get("Intro") or data.get("intro") or data.get("Description") or "").strip(),
+        "releaseDate": "", "category": category, "finished": finished, "tags": tags,
+    }
+
+
 def qidian_api(album_id: str, cookie_str: str | None = None) -> dict:
-    out = _qidian_getshare(album_id, cookie_str=cookie_str)
-    if out: return out
-    raise Exception("起点 getshare 未返回数据，请检查 bookId 与 Cookie")
+    errors = []
+    try:
+        return _qidian_plugin_detail(str(album_id).strip())
+    except Exception as exc:
+        errors.append(str(exc))
+    try:
+        return _qidian_getshare(album_id, cookie_str=cookie_str)
+    except Exception as exc:
+        errors.append(str(exc))
+    raise Exception(f"起点详情获取失败：{'；'.join(errors)}")
 
 def netease_ting_api(album_id: str) -> dict:
     try:
