@@ -95,9 +95,9 @@ _cpu_count = os.cpu_count()
 MAX_WORKERS = max(1, (_cpu_count or 1) - 1)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) if __file__ else os.getcwd()
 
-FANQIE_SHARE_ID = "bXgYgej18j5DoHfjOsk9NOfumLvBERjxnJYpmqmdlWI%3D"
-FANQIE_X_BOGUS = ""
-FANQIE_SIGNATURE = "_02B4Z6wo00001h52CbgAAIDBQeMCdmiXRQoedg0AAO4O4e"
+FANQIE_SHARE_ID = os.environ.get("FANQIE_SHARE_ID", "")
+FANQIE_X_BOGUS = os.environ.get("FANQIE_X_BOGUS", "")
+FANQIE_SIGNATURE = os.environ.get("FANQIE_SIGNATURE", "")
 FANQIE_JSSDK_COOKIE = os.environ.get("FANQIE_JSSDK_COOKIE", "")
 
 XIMALAYA_API_TIMEOUT = 10

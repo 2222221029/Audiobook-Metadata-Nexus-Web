@@ -18,6 +18,13 @@ services:
       WEB_PORT: 8787
       AUDIOMETA_WEB_TOKEN: ${AUDIOMETA_WEB_TOKEN:-}
       XIMALAYA_COOKIE: ${XIMALAYA_COOKIE:-}
+      KUWO_COOKIE: ${KUWO_COOKIE:-}
+      QIDIAN_COOKIE: ${QIDIAN_COOKIE:-}
+      NETEASE_COOKIE: ${NETEASE_COOKIE:-}
+      FANQIE_SHARE_ID: ${FANQIE_SHARE_ID:-}
+      FANQIE_X_BOGUS: ${FANQIE_X_BOGUS:-}
+      FANQIE_SIGNATURE: ${FANQIE_SIGNATURE:-}
+      FANQIE_JSSDK_COOKIE: ${FANQIE_JSSDK_COOKIE:-}
     command: ["python", "docker_web.py"]
     healthcheck:
       test:

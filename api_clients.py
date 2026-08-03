@@ -387,7 +387,7 @@ def fanqie_api(album_id: str) -> dict:
 
 def _qidian_getshare(book_id: str, cookie_str: str | None = None) -> dict | None:
     try:
-        if cookie_str is None: cookie_str = get_platform_cookies().get("qidian", "").strip()
+        if cookie_str is None: cookie_str = os.environ.get("QIDIAN_COOKIE", "").strip() or get_platform_cookies().get("qidian", "").strip()
         bid = book_id.strip()
         if not bid: raise Exception("bookId 为空")
         if not cookie_str: raise Exception("未检测到起点 Cookie")
@@ -568,7 +568,7 @@ def search_platform_metadata(platform: str, keyword: str, page: int = 1, limit: 
 def netease_ting_api(album_id: str) -> dict:
     try:
         session = get_safe_session()
-        cookie_str = get_platform_cookies().get("netease", "").strip()
+        cookie_str = os.environ.get("NETEASE_COOKIE", "").strip() or get_platform_cookies().get("netease", "").strip()
         headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://music.163.com/", "Accept": "application/json"}
         if cookie_str: headers["Cookie"] = session.headers["Cookie"] = cookie_str
         try:
