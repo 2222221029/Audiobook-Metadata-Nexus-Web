@@ -162,7 +162,31 @@ def get_kuwo_album_info(album_id: str, pn=1, rn=24) -> dict:
     except: pass
     return None
 
+def _kuwo_search_album_by_id(album_id: str) -> dict:
+    wanted = str(album_id or "").strip()
+    for endpoint in ("http://search.kuwo.cn/r.s", "https://search.kuwo.cn/r.s"):
+        try:
+            response = get_safe_session().get(endpoint, params={"pn": 0, "rn": 30, "all": wanted, "ft": "album", "newsearch": 1, "rformat": "json", "encoding": "utf8", "plat": "pc", "pcjson": 1}, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+            if response.status_code != 200:
+                continue
+            for album in (response.json().get("albumlist") or []):
+                if str(album.get("albumid") or album.get("id") or "").strip() != wanted:
+                    continue
+                cover = album.get("hts_img") or album.get("img") or album.get("pic") or ""
+                cover = re.sub(r"/([1-9])00/", r"/\g<1>000/", str(cover))
+                tags = [tag for tag in (album.get("startype"), album.get("fartist"), album.get("artist")) if tag]
+                category = str(album.get("startype") or "").strip()
+                finished = "完结" if str(album.get("finished")) in {"1", "true", "True"} else "连载" if album.get("finished") else ""
+                return {"album": album.get("name") or album.get("title") or "", "pic": cover, "artist": album.get("artist") or album.get("aartist") or "", "info": album.get("info") or "", "releaseDate": str(album.get("pub") or album.get("showtime") or "")[:4], "tags": list(dict.fromkeys(tags)), "category": category, "finished": finished, "chapter_count": album.get("musiccnt") or ""}
+        except Exception:
+            continue
+    return {}
+
+
 def kuwo_api(album_id: str) -> dict:
+    search_data = _kuwo_search_album_by_id(album_id)
+    if search_data:
+        return search_data
     # Prefer the plugin's stable album detail endpoint. Some search results
     # from later pages are not accepted by the newer web album endpoint.
     try:
