@@ -172,6 +172,24 @@ def _normalize_kuwo_cover_url(value: str) -> str:
     return re.sub(r"/albumcover/(?:\d+)/", "/albumcover/5000/", cover)
 
 
+def _extract_kuwo_year(value) -> str:
+    if isinstance(value, dict):
+        for key in ("releaseDate", "release_date", "pub", "pubdate", "showtime", "timing_online", "publishTime", "publish_date", "date"):
+            match = re.search(r"(?:19|20)\d{2}", str(value.get(key) or ""))
+            if match:
+                return match.group(0)
+        for child in value.values():
+            year = _extract_kuwo_year(child)
+            if year:
+                return year
+    elif isinstance(value, list):
+        for child in value:
+            year = _extract_kuwo_year(child)
+            if year:
+                return year
+    return ""
+
+
 def _kuwo_search_album_by_id(album_id: str) -> dict:
     wanted = str(album_id or "").strip()
     for endpoint in ("http://search.kuwo.cn/r.s", "https://search.kuwo.cn/r.s"):
@@ -186,7 +204,7 @@ def _kuwo_search_album_by_id(album_id: str) -> dict:
                 tags = [tag for tag in (album.get("startype"), album.get("fartist"), album.get("artist")) if tag]
                 category = str(album.get("startype") or "").strip()
                 finished = "完结" if str(album.get("finished")) in {"1", "true", "True"} else "连载" if album.get("finished") else ""
-                return {"album": album.get("name") or album.get("title") or "", "pic": cover, "artist": album.get("artist") or album.get("aartist") or "", "info": album.get("info") or "", "releaseDate": str(album.get("pub") or album.get("showtime") or "")[:4], "tags": list(dict.fromkeys(tags)), "category": category, "finished": finished, "chapter_count": album.get("musiccnt") or ""}
+                return {"album": album.get("name") or album.get("title") or "", "pic": cover, "artist": album.get("artist") or album.get("aartist") or "", "info": album.get("info") or "", "releaseDate": _extract_kuwo_year(album), "tags": list(dict.fromkeys(tags)), "category": category, "finished": finished, "chapter_count": album.get("musiccnt") or ""}
         except Exception:
             continue
     return {}
@@ -214,7 +232,7 @@ def kuwo_api(album_id: str) -> dict:
                 cover = _normalize_kuwo_cover_url(album.get("pic") or album.get("hts_img") or album.get("img") or "")
                 artist = album.get("artist") or album.get("aartist") or album.get("author") or ""
                 info = album.get("intro") or album.get("info") or album.get("albuminfo") or ""
-                release = str(album.get("releaseDate") or album.get("pubdate") or "")[:4]
+                release = _extract_kuwo_year(album)
                 return {"album": name, "pic": cover, "artist": artist, "info": info, "releaseDate": release}
     except Exception:
         pass
@@ -238,7 +256,7 @@ def kuwo_api(album_id: str) -> dict:
                     "pic": cover,
                     "artist": album.get("artist") or album.get("aartist") or "",
                     "info": album.get("info") or "",
-                    "releaseDate": str(album.get("pub") or album.get("showtime") or "")[:4],
+                    "releaseDate": _extract_kuwo_year(album),
                 }
     except Exception:
         pass
@@ -251,13 +269,13 @@ def kuwo_api(album_id: str) -> dict:
         pic = album_obj.get("pic") or album_obj.get("cover") or album_obj.get("albumpic") or ""
         artist = album_obj.get("artist") or album_obj.get("author") or ""
         info = (album_obj.get("info") or album_obj.get("albuminfo") or album_obj.get("description") or "").strip()
-        release_date = str(album_obj.get("releaseDate") or "").strip()[:4] if album_obj.get("releaseDate") else ""
+        release_date = _extract_kuwo_year(album_obj)
     else:
         name = data.get("album") or data.get("name") or ""
         pic = data.get("pic") or data.get("cover") or ""
         artist = data.get("artist") or data.get("author") or ""
         info = (data.get("info") or data.get("albuminfo") or data.get("description") or "").strip()
-        release_date = str(data.get("releaseDate") or "").strip()[:4] if data.get("releaseDate") else ""
+        release_date = _extract_kuwo_year(data)
 
     if not info and album_id:
         page_desc = get_kuwo_album_desc_from_page(album_id)
