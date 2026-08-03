@@ -24,7 +24,7 @@ from api_clients import (
     search_platform_metadata,
 )
 from config import CATEGORY_MAP, FFMPEG_PATH, FFPROBE_PATH, NETWORK_VERIFY_SSL, get_platform_cookies, get_platform_options, set_platform_cookies
-from network_utils import clean_html_tags, fetch_share_page_html, get_safe_session, parse_fanqie_share_html, parse_qidian_share_html
+from network_utils import clean_html_tags, extract_bytedance_snowflake_year, fetch_share_page_html, get_safe_session, parse_fanqie_share_html, parse_qidian_share_html
 from processor import load_process_params, load_operation_snapshot, process_audio_books, restore_operation_snapshot
 from audio_core import batch_get_audio_info, find_cover, get_audio_list, get_image_resolution
 from metadata_helpers import build_output_folder_name
@@ -699,7 +699,7 @@ def _fanqie_tags(value):
 
 
 def _fanqie_cover(data):
-    for key in ("audio_thumb_uri_webp", "audio_thumb_uri", "audio_thumb_url_hd", "audio_thumb_url", "thumb_url", "horiz_thumb_url", "cover", "cover_url", "image_url"):
+    for key in ("audio_thumb_url_hd", "audio_thumb_uri", "audio_thumb_url", "audio_thumb_uri_webp", "thumb_url", "horiz_thumb_url", "cover", "cover_url", "image_url"):
         value = data.get(key)
         if isinstance(value, dict):
             value = value.get("url") or value.get("uri") or value.get("url_list", [""])[0]
@@ -998,6 +998,10 @@ def fetch_link_metadata(url, platform):
         if platform == "番茄畅听":
             raise ValueError("未能从番茄链接解析到专辑信息。番茄分享页经常需要浏览器渲染，请确认链接有效后重试。")
         raise ValueError("未能从链接中解析到专辑信息")
+    if platform == "番茄畅听" and not data.get("releaseDate"):
+        query = parse_qs(urlparse(url).query)
+        book_id = (query.get("book_id") or query.get("bookId") or [""])[0]
+        data["releaseDate"] = extract_bytedance_snowflake_year(book_id)
     data["_platform"] = platform
     return normalize_metadata(data, platform)
 

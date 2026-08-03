@@ -4,6 +4,7 @@ import ssl
 import re
 import json
 import html as html_lib
+from datetime import datetime, timezone
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.ssl_ import create_urllib3_context
@@ -19,6 +20,18 @@ def _debug_log(msg: str):
         sys.__stdout__.flush()
     except Exception:
         pass
+
+
+def extract_bytedance_snowflake_year(value) -> str:
+    """Decode a ByteDance-style 64-bit ID timestamp as a last-resort year."""
+    try:
+        numeric_id = int(str(value or "").strip())
+        timestamp = numeric_id >> 32
+        year = datetime.fromtimestamp(timestamp, timezone.utc).year
+        current_year = datetime.now(timezone.utc).year
+        return str(year) if 2010 <= year <= current_year + 1 else ""
+    except (TypeError, ValueError, OSError, OverflowError):
+        return ""
 
 def fix_ssl_context():
     if NETWORK_VERIFY_SSL:
@@ -156,9 +169,11 @@ def parse_fanqie_share_html(html: str, page_url: str = "") -> dict:
                         else:
                             tags = []
                         cover = (
-                            page_data.get("audio_thumb_uri_webp")
-                            or book.get("audio_thumb_uri_webp")
+                            book.get("audio_thumb_url_hd")
                             or book.get("audio_thumb_uri")
+                            or page_data.get("audio_thumb_uri")
+                            or book.get("audio_thumb_uri_webp")
+                            or page_data.get("audio_thumb_uri_webp")
                             or book.get("thumb_url")
                             or ""
                         )
@@ -181,7 +196,10 @@ def parse_fanqie_share_html(html: str, page_url: str = "") -> dict:
                             "chapter_count": book.get("serial_count") or book.get("audio_serial_count") or "",
                             "score": book.get("score") or "",
                             "play_num": book.get("play_num") or "",
-                            "releaseDate": str(book.get("create_time") or "")[:4],
+                            "releaseDate": (
+                                (re.search(r"(?:19|20)\d{2}", str(book.get("create_time") or "")) or [""])[0]
+                                or extract_bytedance_snowflake_year(book.get("book_id") or book.get("id"))
+                            ),
                         }
                         return out
             except (TypeError, ValueError, json.JSONDecodeError) as exc:

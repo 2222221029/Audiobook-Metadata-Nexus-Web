@@ -8,7 +8,7 @@ import codecs
 import html
 import requests
 from config import get_platform_cookies, FANQIE_SHARE_ID, FANQIE_X_BOGUS, FANQIE_SIGNATURE
-from network_utils import get_safe_session, _debug_log, clean_html_tags
+from network_utils import get_safe_session, _debug_log, clean_html_tags, extract_bytedance_snowflake_year
 
 def ximalaya_api(endpoint: str, id: str) -> dict:
     id_match = re.search(r"\d+", str(id or ""))
@@ -291,12 +291,12 @@ def parse_novelfm_share_response(data: dict) -> dict:
     title = (api_book.get("book_name") or api_book.get("title") or "").strip()
     if not title: return {}
     author = (api_book.get("author") or "").strip()
-    cover = api_book.get("audio_thumb_uri_webp") or api_book.get("audio_thumb_uri") or api_book.get("thumb_url") or ""
+    cover = api_book.get("audio_thumb_url_hd") or api_book.get("audio_thumb_uri") or api_book.get("audio_thumb_uri_webp") or api_book.get("thumb_url") or ""
     desc = (api_book.get("abstract") or "").strip()
     tags_str = api_book.get("tags") or ""
     tags = [t.strip() for t in tags_str.split(",") if t.strip()] if isinstance(tags_str, str) else []
     creation_status = api_book.get("creation_status")
-    finished = "完结" if str(creation_status) == "1" else "连载" if creation_status is not None else ""
+    finished = "完结" if str(creation_status) == "0" else "连载" if creation_status is not None else ""
     serial_count = api_book.get("serial_count") or ""
     try: chapter_count = int(serial_count) if serial_count else 0
     except: chapter_count = 0
@@ -304,6 +304,8 @@ def parse_novelfm_share_response(data: dict) -> dict:
     if not category and tags: category = tags[0]
     create_time = (api_book.get("create_time") or "").strip()
     release_date = create_time[:4] if len(create_time) >= 4 else ""
+    if not re.fullmatch(r"(?:19|20)\d{2}", release_date):
+        release_date = extract_bytedance_snowflake_year(api_book.get("book_id") or api_book.get("id"))
     return {"name": title, "title": title, "album": title, "bestCover": cover, "cover": cover, "pic": cover, "author": author, "announcer": "", "artist": "", "desc": desc, "info": desc, "releaseDate": release_date, "category": category, "finished": finished, "tags": tags, "chapter_count": chapter_count}
 
 def _fanqie_get_share_info(book_id: str) -> dict:
@@ -355,7 +357,7 @@ def _fanqie_search_by_id(book_id: str) -> dict:
                 if str(book.get("book_id", "")).strip() != want_id: continue
                 category = (book.get("category") or book.get("category_name") or "").strip()
                 finished = ""
-                if book.get("creation_status") is not None: finished = "完结" if str(book.get("creation_status")) == "1" else "连载"
+                if book.get("creation_status") is not None: finished = "完结" if str(book.get("creation_status")) == "0" else "连载"
                 elif book.get("serial_status"): finished = "完结" if "完" in str(book.get("serial_status")) else "连载"
                 tags = []
                 tags_raw = book.get("tags") or book.get("tag_list") or book.get("labels") or []
@@ -392,7 +394,7 @@ def _fanqie_plugin_detail(book_id: str) -> dict:
                 tags = [str(item.get("name") or item.get("tag_name") or item.get("tagName") or item.get("value") or "").strip() if isinstance(item, dict) else str(item).strip() for item in tags_value]
             else:
                 tags = []
-            result = {"name": title, "title": title, "album": title, "bestCover": data.get("thumb_url") or data.get("cover") or "", "cover": data.get("thumb_url") or data.get("cover") or "", "pic": data.get("thumb_url") or data.get("cover") or "", "author": str(data.get("author") or data.get("author_name") or "").strip(), "announcer": str(data.get("anchor") or data.get("narrator") or "").strip(), "artist": str(data.get("anchor") or data.get("narrator") or "").strip(), "desc": str(data.get("abstract") or data.get("description") or data.get("desc") or "").strip(), "info": str(data.get("abstract") or data.get("description") or data.get("desc") or "").strip(), "releaseDate": "", "category": str(data.get("category") or data.get("category_name") or "").strip(), "finished": "完结" if str(data.get("creation_status")) == "1" else "连载" if data.get("creation_status") is not None else "", "tags": list(dict.fromkeys(tag for tag in tags if tag))}
+            result = {"name": title, "title": title, "album": title, "bestCover": data.get("thumb_url") or data.get("cover") or "", "cover": data.get("thumb_url") or data.get("cover") or "", "pic": data.get("thumb_url") or data.get("cover") or "", "author": str(data.get("author") or data.get("author_name") or "").strip(), "announcer": str(data.get("anchor") or data.get("narrator") or "").strip(), "artist": str(data.get("anchor") or data.get("narrator") or "").strip(), "desc": str(data.get("abstract") or data.get("description") or data.get("desc") or "").strip(), "info": str(data.get("abstract") or data.get("description") or data.get("desc") or "").strip(), "releaseDate": extract_bytedance_snowflake_year(data.get("book_id") or data.get("id") or book_id), "category": str(data.get("category") or data.get("category_name") or "").strip(), "finished": "完结" if str(data.get("creation_status")) == "0" else "连载" if data.get("creation_status") is not None else "", "tags": list(dict.fromkeys(tag for tag in tags if tag))}
             break
         except Exception:
             continue
@@ -449,7 +451,7 @@ def fanqie_api(album_id: str) -> dict:
                                 if tag and tag not in tags:
                                     tags.append(tag)
                             cs = book_data.get("creation_status")
-                            if cs is not None and not finished: finished = "完结" if str(cs) == "1" else "连载"
+                            if cs is not None and not finished: finished = "完结" if str(cs) == "0" else "连载"
                             break
             except: pass
         try:
