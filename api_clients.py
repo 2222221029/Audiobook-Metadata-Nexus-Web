@@ -162,6 +162,16 @@ def get_kuwo_album_info(album_id: str, pn=1, rn=24) -> dict:
     except: pass
     return None
 
+def _normalize_kuwo_cover_url(value: str) -> str:
+    cover = str(value or "").strip()
+    if not cover:
+        return ""
+    if not cover.startswith(("http://", "https://")):
+        cover = "https://img2.kuwo.cn/star/albumcover/" + cover.lstrip("/")
+    cover = cover.replace("http://", "https://")
+    return re.sub(r"/albumcover/(?:\d+)/", "/albumcover/5000/", cover)
+
+
 def _kuwo_search_album_by_id(album_id: str) -> dict:
     wanted = str(album_id or "").strip()
     for endpoint in ("http://search.kuwo.cn/r.s", "https://search.kuwo.cn/r.s"):
@@ -172,8 +182,7 @@ def _kuwo_search_album_by_id(album_id: str) -> dict:
             for album in (response.json().get("albumlist") or []):
                 if str(album.get("albumid") or album.get("id") or "").strip() != wanted:
                     continue
-                cover = album.get("hts_img") or album.get("img") or album.get("pic") or ""
-                cover = re.sub(r"/([1-9])00/", r"/\g<1>000/", str(cover))
+                cover = _normalize_kuwo_cover_url(album.get("hts_img") or album.get("img") or album.get("pic") or "")
                 tags = [tag for tag in (album.get("startype"), album.get("fartist"), album.get("artist")) if tag]
                 category = str(album.get("startype") or "").strip()
                 finished = "完结" if str(album.get("finished")) in {"1", "true", "True"} else "连载" if album.get("finished") else ""
@@ -202,8 +211,7 @@ def kuwo_api(album_id: str) -> dict:
             album = albums[0] if isinstance(albums, list) and albums else {}
             if isinstance(album, dict) and (album.get("name") or album.get("album")):
                 name = album.get("name") or album.get("album") or album.get("title") or ""
-                cover = album.get("pic") or album.get("hts_img") or album.get("img") or ""
-                cover = re.sub(r"/([1-9])00/", r"/\g<1>000/", str(cover))
+                cover = _normalize_kuwo_cover_url(album.get("pic") or album.get("hts_img") or album.get("img") or "")
                 artist = album.get("artist") or album.get("aartist") or album.get("author") or ""
                 info = album.get("intro") or album.get("info") or album.get("albuminfo") or ""
                 release = str(album.get("releaseDate") or album.get("pubdate") or "")[:4]
@@ -224,8 +232,7 @@ def kuwo_api(album_id: str) -> dict:
             for album in (response.json().get("albumlist") or []):
                 if str(album.get("albumid") or album.get("id") or "").strip() != str(album_id).strip():
                     continue
-                cover = album.get("hts_img") or album.get("img") or album.get("pic") or ""
-                cover = re.sub(r"/([1-9])00/", r"/\g<1>000/", str(cover))
+                cover = _normalize_kuwo_cover_url(album.get("hts_img") or album.get("img") or album.get("pic") or "")
                 return {
                     "album": album.get("name") or album.get("title") or "",
                     "pic": cover,
@@ -255,7 +262,7 @@ def kuwo_api(album_id: str) -> dict:
     if not info and album_id:
         page_desc = get_kuwo_album_desc_from_page(album_id)
         if page_desc: info = page_desc
-    if pic: pic = re.sub(r'/([1-9])00/', r'/\g<1>000/', pic)
+    if pic: pic = _normalize_kuwo_cover_url(pic)
     return {"album": name, "pic": pic, "artist": artist, "info": info, "releaseDate": release_date}
 
 def parse_novelfm_share_response(data: dict) -> dict:
