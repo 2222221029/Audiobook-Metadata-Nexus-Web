@@ -1391,8 +1391,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                 meta = fetch_api_metadata(payload.get("api_source"), payload.get("api_id"))
                 return json_response(self, {"ok": True, "metadata": meta})
             if path == "/api/search-metadata":
-                results = search_platform_metadata(payload.get("api_source"), payload.get("keyword"))
-                return json_response(self, {"ok": True, "results": results})
+                page = max(1, int(payload.get("page") or 1))
+                results, has_next = search_platform_metadata(payload.get("api_source"), payload.get("keyword"), page=page)
+                return json_response(self, {"ok": True, "results": results, "page": page, "has_next": has_next})
             if path == "/api/fetch-link":
                 meta = fetch_link_metadata(payload.get("url"), payload.get("platform"))
                 return json_response(self, {"ok": True, "metadata": meta})
@@ -2047,6 +2048,7 @@ INDEX_HTML = r"""<!doctype html>
     .search-result img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; background: var(--surface-3); }
     .search-result-title { font-weight: 700; }
     .search-result-meta { margin-top: 3px; color: var(--text-3); font-size: 12px; }
+    .search-pagination { display:flex; justify-content:space-between; gap:8px; margin-top:10px; }
 
     /* ── Toolbox ──────────────────────────────── */
     .toolbox {
@@ -3412,8 +3414,26 @@ INDEX_HTML = r"""<!doctype html>
         };
         box.appendChild(button);
       });
+      const pagination = document.createElement('div');
+      pagination.className = 'search-pagination';
+      pagination.innerHTML = '<button type="button" class="quiet-button" id="searchPrevBtn">上一页</button><span class="search-result-meta" id="searchPageText"></span><button type="button" class="quiet-button" id="searchNextBtn">下一页</button>';
+      pagination.querySelector('#searchPrevBtn').disabled = titleSearchPage <= 1;
+      pagination.querySelector('#searchNextBtn').disabled = !titleSearchHasNext;
+      pagination.querySelector('#searchPageText').textContent = `第 ${titleSearchPage} 页`;
+      pagination.querySelector('#searchPrevBtn').onclick = () => loadTitleSearchPage(titleSearchPage - 1);
+      pagination.querySelector('#searchNextBtn').onclick = () => loadTitleSearchPage(titleSearchPage + 1);
+      box.appendChild(pagination);
       box.hidden = false;
       backdrop.hidden = false;
+    }
+
+    let titleSearchPage = 1;
+    let titleSearchHasNext = false;
+    async function loadTitleSearchPage(page) {
+      const data = await api('/api/search-metadata', { method: 'POST', body: JSON.stringify({api_source: form.api_source.value, keyword: form.api_id.value.trim(), page}), timeoutMs: 30000 });
+      titleSearchPage = data.page || page;
+      titleSearchHasNext = !!data.has_next;
+      renderTitleSearchResults(data.results || []);
     }
 
     function closeTitleSearchResults() {
@@ -3427,7 +3447,9 @@ INDEX_HTML = r"""<!doctype html>
       if (!keyword) return toast('请输入书名');
       setButtonBusy(btn, true, '搜索中...');
       try {
-        const data = await api('/api/search-metadata', { method: 'POST', body: JSON.stringify({api_source: form.api_source.value, keyword}), timeoutMs: 30000 });
+        titleSearchPage = 1;
+        const data = await api('/api/search-metadata', { method: 'POST', body: JSON.stringify({api_source: form.api_source.value, keyword, page: 1}), timeoutMs: 30000 });
+        titleSearchHasNext = !!data.has_next;
         renderTitleSearchResults(data.results || []);
       } finally { setButtonBusy(btn, false); }
     }

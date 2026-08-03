@@ -445,7 +445,7 @@ def qidian_api(album_id: str, cookie_str: str | None = None) -> dict:
         errors.append(str(exc))
     raise Exception(f"起点详情获取失败：{'；'.join(errors)}")
 
-def search_platform_metadata(platform: str, keyword: str, limit: int = 12) -> list[dict]:
+def search_platform_metadata(platform: str, keyword: str, page: int = 1, limit: int = 12) -> tuple[list[dict], bool]:
     """Search book/album titles using the same public endpoints as the plugins."""
     platform = str(platform or "").strip()
     keyword = str(keyword or "").strip()
@@ -463,7 +463,7 @@ def search_platform_metadata(platform: str, keyword: str, limit: int = 12) -> li
 
     if platform == "喜马拉雅":
         url = "https://www.ximalaya.com/revision/search"
-        params = {"core": "album", "spellchecker": "true", "rows": limit, "condition": "relation", "device": "web", "kw": keyword, "page": 1}
+        params = {"core": "album", "spellchecker": "true", "rows": limit, "condition": "relation", "device": "web", "kw": keyword, "page": page}
         data = session.get(url, params=params, headers={**headers, "Referer": "https://www.ximalaya.com/"}, timeout=20).json()
         docs = (((data.get("data") or {}).get("result") or {}).get("response") or {}).get("docs") or []
         for item in docs:
@@ -471,29 +471,29 @@ def search_platform_metadata(platform: str, keyword: str, limit: int = 12) -> li
     elif platform == "番茄畅听":
         url = "https://api5-sinfonlinec.novelfm.com/novelfm/bookmall/search/page/v1/"
         params = {"device_platform": "android", "os": "android", "aid": "3040", "app_name": "novel_fm", "version_code": "608", "_rticket": int(time.time() * 1000)}
-        data = session.post(url, params=params, json={"query": keyword, "limit": limit, "offset": 0}, headers=headers, timeout=20).json()
+        data = session.post(url, params=params, json={"query": keyword, "limit": limit, "offset": (page - 1) * limit}, headers=headers, timeout=20).json()
         for group in ((data.get("data") or {}).get("search_data") or []):
             for item in (group.get("books") or []):
                 add(item.get("book_id"), item.get("book_name"), item.get("author"), item.get("thumb_url"), item.get("abstract"), str(item.get("tags") or "").split(","))
     elif platform == "起点听书":
         url = "https://qdcg.qidian.com/api/search/list"
-        data = session.get(url, params={"key": keyword, "pageIndex": 1, "pageSize": limit, "site": 3, "model": 1}, headers={**headers, "Platform": "10", "AppId": "50", "AreaId": "501000"}, timeout=20).json()
+        data = session.get(url, params={"key": keyword, "pageIndex": page, "pageSize": limit, "site": 3, "model": 1}, headers={**headers, "Platform": "10", "AppId": "50", "AreaId": "501000"}, timeout=20).json()
         for item in ((data.get("Data") or {}).get("items") or []):
             add(item.get("bookId"), item.get("bookName"), item.get("authorName"), "", item.get("description"), [item.get("categoryName")] if item.get("categoryName") else [])
     elif platform == "酷我听书":
-        data = session.get("http://search.kuwo.cn/r.s", params={"pn": 0, "rn": limit, "all": keyword, "ft": "album", "newsearch": 1, "rformat": "json", "encoding": "utf8", "plat": "pc", "pcjson": 1}, headers=headers, timeout=20).json()
+        data = session.get("http://search.kuwo.cn/r.s", params={"pn": page - 1, "rn": limit, "all": keyword, "ft": "album", "newsearch": 1, "rformat": "json", "encoding": "utf8", "plat": "pc", "pcjson": 1}, headers=headers, timeout=20).json()
         for item in data.get("albumlist") or data.get("abslist") or []:
             add(item.get("albumid") or item.get("id"), item.get("name"), item.get("artist") or item.get("aartist"), item.get("hts_img") or item.get("img"), item.get("info"))
     elif platform == "网易云听书":
-        data = session.get("https://music.163.com/api/search/get", params={"s": keyword, "type": 1009, "limit": limit, "offset": 0}, headers={**headers, "Referer": "https://music.163.com/"}, timeout=20).json()
+        data = session.get("https://music.163.com/api/search/get", params={"s": keyword, "type": 1009, "limit": limit, "offset": (page - 1) * limit}, headers={**headers, "Referer": "https://music.163.com/"}, timeout=20).json()
         for item in ((data.get("result") or {}).get("djRadios") or []):
             dj = (item.get("dj") or {}).get("nickname") if isinstance(item.get("dj"), dict) else ""
             cover = item.get("picUrl") or item.get("pic_url") or ""
             add(item.get("id"), item.get("name"), dj, cover, item.get("desc"), [x for x in (item.get("category"), item.get("secondCategory")) if x])
     elif platform == "懒人听书":
         from urllib.parse import quote
-        page = session.get(f"https://www.lrts.me/search/book/{quote(keyword)}", headers={**headers, "Referer": "https://www.lrts.me/"}, timeout=20).text
-        for block in re.findall(r'<li class="book-item"[^>]*>([\s\S]*?)</li>', page):
+        page_html = session.get(f"https://www.lrts.me/search/book/{page}/{quote(keyword)}" if page > 1 else f"https://www.lrts.me/search/book/{quote(keyword)}", headers={**headers, "Referer": "https://www.lrts.me/"}, timeout=20).text
+        for block in re.findall(r'<li class="book-item"[^>]*>([\s\S]*?)</li>', page_html):
             match = re.search(r'<a href="/book/(\d+)"', block)
             title = re.search(r'<a class="book-item-name"[^>]*>([\s\S]*?)</a>', block)
             cover = re.search(r'<img[^>]*src="([^"]+)"', block)
@@ -502,7 +502,7 @@ def search_platform_metadata(platform: str, keyword: str, limit: int = 12) -> li
                 clean = lambda value: html.unescape(re.sub(r"<[^>]+>", " ", value)).strip()
                 add(match.group(1), clean(title.group(1)), "", cover.group(1) if cover else "", clean(intro.group(1)) if intro else "")
     elif platform == "蜻蜓fm":
-        graphql = '{ searchResultsPage(keyword:"%s", page:1, include:"channel_ondemand" ) { searchData, numFound } }' % keyword.replace('"', '\\"')
+        graphql = '{ searchResultsPage(keyword:"%s", page:%d, include:"channel_ondemand" ) { searchData, numFound } }' % (keyword.replace('"', '\\"'), page)
         data = session.post("https://webbff.qtfm.cn/www", json={"query": graphql}, headers=headers, timeout=20).json()
         page = ((data.get("data") or {}).get("searchResultsPage") or {})
         search_data = page.get("searchData") or []
@@ -512,7 +512,7 @@ def search_platform_metadata(platform: str, keyword: str, limit: int = 12) -> li
             add(item.get("id"), item.get("title"), item.get("podcaster"), cover, item.get("description"))
     else:
         raise ValueError(f"{platform} 暂未接入书名搜索接口")
-    return results[:limit]
+    return results[:limit], len(results) >= limit
 
 
 def netease_ting_api(album_id: str) -> dict:
