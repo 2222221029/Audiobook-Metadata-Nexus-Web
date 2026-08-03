@@ -153,6 +153,47 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("document.querySelectorAll('.queue-console > .tab-panel')", INDEX_HTML)
         self.assertNotIn("document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'))", INDEX_HTML)
 
+    def test_archive_parameter_labels_do_not_wrap(self):
+        self.assertIn("grid-template-columns: max-content minmax(0, 1fr)", INDEX_HTML)
+        self.assertIn(".archive-main-grid label { margin: 0; color: #d5dce9; white-space: nowrap; }", INDEX_HTML)
+
+    def test_redesigned_console_has_a_complete_light_palette(self):
+        for selector in (
+            'html[data-theme="light"] .global-topbar',
+            'html[data-theme="light"] .section',
+            'html[data-theme="light"] .queue-console,',
+            'html[data-theme="light"] .queue-console th',
+            'html[data-theme="light"] .right-commandbar',
+            'html[data-theme="light"] .log',
+        ):
+            self.assertIn(selector, INDEX_HTML)
+        self.assertIn("--bg: #edf1f7", INDEX_HTML)
+
+    def test_settings_center_exposes_six_curated_themes(self):
+        for theme, label in (
+            ("dark", "曜石深色"),
+            ("light", "云雾浅色"),
+            ("ocean", "深海蓝"),
+            ("aurora", "极光紫"),
+            ("jade", "松石青"),
+            ("graphite", "钛金灰"),
+        ):
+            self.assertIn(f'data-theme-option="{theme}"', INDEX_HTML)
+            self.assertIn(label, INDEX_HTML)
+        for theme in ("ocean", "aurora", "jade", "graphite"):
+            self.assertIn(f'html[data-theme="{theme}"]', INDEX_HTML)
+        self.assertIn("const _THEMES = Object.freeze", INDEX_HTML)
+        self.assertIn("option.dataset.themeOption === theme", INDEX_HTML)
+
+    def test_album_tag_pool_uses_distinct_colour_variables(self):
+        self.assertIn("chip.className = 'chip album-tag-chip'", INDEX_HTML)
+        self.assertIn("index * 137.508", INDEX_HTML)
+        self.assertIn("chip.style.setProperty('--tag-color-a'", INDEX_HTML)
+        self.assertIn("chip.style.setProperty('--tag-color-b'", INDEX_HTML)
+        self.assertIn("text.textContent = tag", INDEX_HTML)
+        self.assertIn("#tagPool .album-tag-chip", INDEX_HTML)
+        self.assertNotIn("chip.innerHTML = `<span>${tag}</span>`", INDEX_HTML)
+
     def test_ypshuo_author_candidates_require_exact_title_and_are_distinct(self):
         candidates = [
             {"id": "1", "novel_name": "我不是戏神", "author_name": "三九音域"},
