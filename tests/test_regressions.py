@@ -1,4 +1,5 @@
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -115,6 +116,26 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("@media (max-width: 1500px) and (min-width: 901px)", INDEX_HTML)
         self.assertIn(".source-controls > button:nth-of-type(2) { grid-column: 2; }", INDEX_HTML)
         self.assertNotIn('class="source-action"', INDEX_HTML)
+
+    def test_workspace_redesign_keeps_all_required_sections(self):
+        for marker in (
+            'class="global-topbar"', 'id="settingsBtn"', 'class="right-commandbar"',
+            'name="input_folder"', 'id="teamPool"', 'id="seriesPool"', 'id="tagPool"',
+        ):
+            self.assertIn(marker, INDEX_HTML)
+
+    def test_settings_center_exposes_existing_maintenance_tools(self):
+        for element_id in (
+            "settingsModal", "cookieBtn", "webTokenBtn", "blacklistBtn",
+            "exportConfigBtn", "importConfigBtn", "previewRunBtn", "healthBtn",
+            "qualityBtn", "batchImportBtn", "restoreSnapshotBtn", "exportLogBtn",
+        ):
+            self.assertIn(f'id="{element_id}"', INDEX_HTML)
+
+    def test_redesigned_html_has_no_duplicate_static_ids(self):
+        static_ids = re.findall(r'id="([^"]+)"', INDEX_HTML)
+        duplicates = sorted({element_id for element_id in static_ids if static_ids.count(element_id) > 1})
+        self.assertEqual(duplicates, [])
 
     def test_ypshuo_author_candidates_require_exact_title_and_are_distinct(self):
         candidates = [

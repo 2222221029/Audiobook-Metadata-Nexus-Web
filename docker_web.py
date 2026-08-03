@@ -2630,41 +2630,276 @@ INDEX_HTML = r"""<!doctype html>
         position: static; padding: 0; width: 100%;
       }
     }
+
+    /* ══════════════════════════════════════════════
+       2026 WORKSPACE REDESIGN
+       ══════════════════════════════════════════════ */
+    .app {
+      height: 100vh;
+      grid-template-columns: minmax(620px, 54%) minmax(0, 46%);
+      grid-template-rows: 72px minmax(0, 1fr);
+      background: var(--bg);
+    }
+    .global-topbar {
+      grid-column: 1 / -1; grid-row: 1;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+      padding: 0 18px 0 20px;
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      border-bottom: 1px solid var(--border-med);
+      box-shadow: 0 10px 34px rgba(0,0,0,.18);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      z-index: 5;
+    }
+    .topbar-brand, .brand-line, .topbar-controls, .topbar-config-actions,
+    .status-card, .status-copy { display: flex; align-items: center; }
+    .topbar-brand { min-width: 0; gap: 12px; }
+    .brand-mark {
+      position: relative; width: 38px; height: 38px; flex: 0 0 38px;
+      display: grid; place-items: center; border-radius: 13px;
+      background: linear-gradient(145deg, #818cf8, #4f46e5 55%, #7c3aed);
+      box-shadow: 0 8px 24px var(--primary-glow);
+      transform: rotate(45deg);
+    }
+    .brand-mark::before, .brand-mark::after, .brand-mark span {
+      content: ''; position: absolute; border: 2px solid rgba(255,255,255,.9);
+      border-radius: 50%; transform: rotate(-45deg);
+    }
+    .brand-mark::before { width: 23px; height: 15px; border-left-color: transparent; }
+    .brand-mark::after { width: 15px; height: 23px; border-top-color: transparent; opacity: .72; }
+    .brand-mark span { width: 7px; height: 7px; background: #fff; border: 0; }
+    .app-title { min-width: 0; gap: 1px; }
+    .brand-line { min-width: 0; gap: 12px; }
+    .brand-line h1 { flex: 0 0 auto; font-size: 20px; }
+    .brand-divider { width: 1px; height: 20px; flex: 0 0 1px; background: var(--border-med); }
+    .brand-line .app-subtitle {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-size: 11px; text-transform: none; letter-spacing: .035em;
+    }
+    .brand-caption {
+      color: var(--text-3); font-size: 9px; font-weight: 700;
+      letter-spacing: .13em; text-transform: uppercase;
+    }
+    .topbar-controls { flex: 0 0 auto; gap: 9px; }
+    .topbar-config-actions { gap: 6px; padding-right: 9px; border-right: 1px solid var(--border); }
+    .topbar-config-actions button { min-height: 32px; padding: 0 10px; font-size: 11.5px; }
+    .topbar-icon-button {
+      width: 34px; height: 34px; min-height: 34px; padding: 0;
+      border-radius: 50%; background: var(--surface-3); color: var(--text-2);
+    }
+    .topbar-icon-button:hover:not(:disabled) {
+      background: var(--primary-bg); border-color: var(--primary); color: var(--primary-light);
+    }
+    .global-topbar .status-card {
+      min-width: 210px; flex-direction: row; justify-content: flex-end; gap: 12px;
+      padding-left: 12px; border-left: 1px solid var(--border);
+    }
+    .status-copy { min-width: 128px; flex-direction: column; align-items: stretch; gap: 6px; }
+    .global-topbar .state-row { justify-content: flex-end; }
+    .header-progress {
+      width: 100%; height: 4px; overflow: hidden;
+      border-radius: 99px; background: var(--border);
+    }
+    .global-topbar .percent { min-width: 48px; font-size: 23px; text-align: right; }
+
+    .left {
+      grid-column: 1; grid-row: 2;
+      padding: 14px 10px 14px 16px;
+      background: var(--bg); border-right: 0; overflow: hidden;
+    }
+    .workspace-heading {
+      min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 0 5px 10px 2px; flex: 0 0 auto;
+    }
+    .workspace-heading > div { min-width: 0; display: flex; align-items: baseline; gap: 9px; }
+    .workspace-heading strong { color: var(--text); font-size: 13px; }
+    .workspace-heading span { color: var(--text-3); font-size: 10.5px; font-weight: 600; }
+    .workspace-clear {
+      min-height: 28px; padding: 0 10px; border-color: transparent;
+      background: transparent; color: var(--text-3); font-size: 11px; box-shadow: none;
+    }
+    .workspace-clear:hover:not(:disabled) {
+      transform: none; box-shadow: none; color: var(--danger);
+      border-color: color-mix(in srgb, var(--danger) 25%, transparent); background: var(--danger-bg);
+    }
+    .form-scroll { padding: 0 5px 18px 0; }
+    .section {
+      margin-bottom: 10px; padding: 15px;
+      background: linear-gradient(145deg, color-mix(in srgb, var(--surface-2) 95%, transparent), var(--surface));
+      border-color: var(--border-med); border-radius: 13px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.13), inset 0 1px 0 rgba(255,255,255,.025);
+    }
+    .section:hover { border-color: color-mix(in srgb, var(--primary) 28%, var(--border-med)); box-shadow: 0 10px 34px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.035); }
+    .section-title { margin-bottom: 13px; font-size: 13.5px; }
+    .section-icon { width: 25px; height: 25px; border-radius: 8px; }
+    label { margin-bottom: 5px; font-size: 10.5px; text-transform: none; letter-spacing: .025em; }
+    input, select, textarea, .custom-select-trigger, .chips { border-color: var(--border-med); }
+    input, select, .custom-select-trigger { min-height: 42px; }
+    .chips { min-height: 42px; }
+    .grid { gap: 11px; }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }
+    .source-controls { gap: 8px; grid-template-columns: minmax(132px, .82fr) minmax(210px, 1.45fr) repeat(2, minmax(135px, 1fr)); }
+    .source-controls > .custom-select, .source-controls > input, .source-controls > button { min-height: 42px; }
+    .source-controls > button { font-size: 12px; border-radius: 9px; }
+    .field-label-row { min-height: 26px; }
+    .field-mini-action { min-height: 24px; font-size: 10.5px; }
+    .series-inline button { min-height: 42px; }
+    .cover-row { grid-template-columns: 150px minmax(0, 1fr); }
+    .cover-box { height: 150px; }
+
+    .right {
+      grid-column: 2; grid-row: 2;
+      min-height: 0; padding: 14px 16px 14px 8px; gap: 10px;
+      background: var(--bg); overflow: hidden;
+    }
+    .tabs {
+      height: 48px; padding: 7px 8px 0; flex: 0 0 48px;
+      border: 1px solid var(--border-med); border-radius: 13px 13px 0 0;
+      background: var(--surface); box-shadow: 0 8px 28px rgba(0,0,0,.12);
+    }
+    .tab { min-height: 40px; padding: 0 13px; font-size: 12px; }
+    .tab.active { background: transparent; }
+    .tab-panel {
+      padding: 12px; border: 1px solid var(--border-med); border-top: 0;
+      border-radius: 0 0 13px 13px; background: var(--surface);
+      box-shadow: 0 12px 34px rgba(0,0,0,.15);
+    }
+    .queue-actions { margin-bottom: 9px; }
+    .queue-actions button { min-height: 31px; }
+    .table-wrap { border-color: var(--border-med); }
+    th { padding: 9px 10px; font-size: 10px; }
+    td { padding: 9px 10px; font-size: 12px; }
+    .log { border-color: var(--border-med); border-radius: 10px; }
+    .right-commandbar {
+      min-height: 56px; flex: 0 0 56px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 8px 10px 8px 13px;
+      border: 1px solid var(--border-med); border-radius: 12px;
+      background: var(--surface); box-shadow: 0 10px 28px rgba(0,0,0,.14);
+    }
+    .selection-copy { display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 11px; font-weight: 700; }
+    .selection-copy .state-dot { background: var(--primary-light); }
+    .right-commandbar .ha-process { display: grid; grid-template-columns: repeat(3, minmax(110px, 1fr)); gap: 7px; flex: 0 1 430px; }
+    .right-commandbar .ha-process button { min-height: 38px; padding: 0 12px; font-size: 12px; border-radius: 9px; }
+
+    .settings-mask { z-index: 1300; }
+    #cookieModal, #blacklistModal { z-index: 1320; }
+    .settings-modal { width: min(940px, 100%); max-height: min(820px, calc(100vh - 40px)); }
+    .settings-head > div { display: flex; flex-direction: column; gap: 2px; }
+    .settings-head > div > span { color: var(--text-3); font-size: 11px; font-weight: 600; }
+    .settings-body { padding: 18px; background: var(--bg); }
+    .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .settings-card {
+      padding: 14px; border: 1px solid var(--border-med); border-radius: 12px;
+      background: var(--surface); box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    }
+    .settings-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 13px; }
+    .settings-card-head > div { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .settings-card-head strong { color: var(--text); font-size: 13px; }
+    .settings-card-head span:not(.settings-icon) { color: var(--text-3); font-size: 10.5px; font-weight: 600; }
+    .settings-icon {
+      width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center;
+      border-radius: 9px; color: var(--primary-light); background: var(--primary-bg);
+    }
+    .settings-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+    .settings-actions button {
+      min-height: 36px; min-width: 0; padding: 0 10px;
+      justify-content: flex-start; background: var(--surface-2); color: var(--text-2);
+      border-color: var(--border); font-size: 11.5px; box-shadow: none;
+    }
+    .settings-actions button:hover:not(:disabled) { transform: none; box-shadow: none; color: var(--text); background: var(--primary-bg); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+    .settings-danger {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      margin-top: 12px; padding: 13px 14px;
+      border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--border));
+      border-radius: 12px; background: var(--danger-bg);
+    }
+    .settings-danger > div { display: flex; flex-direction: column; gap: 2px; }
+    .settings-danger strong { color: var(--text); font-size: 12.5px; }
+    .settings-danger span { color: var(--text-3); font-size: 10.5px; }
+    .settings-danger button { min-height: 34px; }
+    .settings-foot { background: var(--surface); }
+
+    @media (max-width: 1500px) and (min-width: 901px) {
+      .source-controls { grid-template-columns: minmax(140px, .78fr) minmax(0, 1.22fr); }
+      .source-controls > button:nth-of-type(1) { grid-column: 1; }
+      .source-controls > button:nth-of-type(2) { grid-column: 2; }
+    }
+    @media (max-width: 1180px) {
+      body { overflow: auto; }
+      .app { height: auto; min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: auto auto minmax(680px, auto); }
+      .global-topbar { grid-column: 1; grid-row: 1; min-height: 72px; }
+      .left { grid-column: 1; grid-row: 2; padding: 14px 16px; overflow: visible; }
+      .right { grid-column: 1; grid-row: 3; min-height: 680px; padding: 10px 16px 16px; overflow: visible; }
+      .form-scroll { overflow: visible; }
+      .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+      body { padding-bottom: 0; }
+      .global-topbar { align-items: flex-start; flex-direction: column; gap: 10px; padding: 13px 14px; }
+      .topbar-brand { width: 100%; }
+      .brand-caption { display: none; }
+      .brand-divider, .brand-line .app-subtitle { display: none; }
+      .topbar-controls { width: 100%; flex-wrap: wrap; }
+      .topbar-config-actions { flex: 1; }
+      .topbar-config-actions button { flex: 1; }
+      .global-topbar .status-card { min-width: 170px; margin-left: auto; }
+      .workspace-heading > div { flex-direction: column; gap: 0; }
+      .source-controls { grid-template-columns: 1fr; }
+      .source-controls > button:nth-of-type(1), .source-controls > button:nth-of-type(2) { grid-column: auto; }
+      .grid, .grid-3 { grid-template-columns: 1fr; }
+      .span-2, .span-3, .grid-3 .span-3 { grid-column: span 1; }
+      .cover-row { grid-template-columns: 1fr; }
+      .tabs { position: static; flex: 0 0 auto; height: auto; border-radius: 12px; }
+      .tab-panel { border-top: 1px solid var(--border-med); border-radius: 12px; }
+      .right-commandbar { align-items: stretch; flex-direction: column; min-height: 0; }
+      .right-commandbar .ha-process { width: 100%; flex: 0 0 auto; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .settings-grid { grid-template-columns: 1fr; }
+      .settings-danger { align-items: stretch; flex-direction: column; }
+      .settings-danger button { width: 100%; }
+    }
+    @media (max-width: 480px) {
+      .global-topbar .status-card { width: 100%; min-width: 0; padding: 8px 0 0; border-left: 0; border-top: 1px solid var(--border); }
+      .right-commandbar .ha-process { grid-template-columns: 1fr; }
+      .settings-actions { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
   <div class="app">
-    <!-- ── Left Panel ─────────────────────────────── -->
-    <section class="left">
-      <div class="app-header">
+    <!-- ── Global Top Bar ─────────────────────────── -->
+    <header class="global-topbar">
+      <div class="topbar-brand">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
         <div class="app-title">
-          <h1>声境元枢</h1>
-          <span class="app-subtitle">AudioMeta Nexus · 有声书元数据处理</span>
+          <div class="brand-line"><h1>声境元枢</h1><span class="brand-divider"></span><span class="app-subtitle">AudioMeta Nexus · 有声书元数据处理</span></div>
+          <span class="brand-caption">Audiobook metadata workspace</span>
         </div>
-        <div class="header-right">
-          <button type="button" class="theme-toggle" id="themeToggleBtn" title="切换明暗主题">☀</button>
-          <div class="status-card">
+      </div>
+      <div class="topbar-controls">
+        <div class="topbar-config-actions">
+          <button type="button" class="quiet-button" id="loadConfigBtn">↺ 加载配置</button>
+          <button type="button" class="quiet-button" id="saveConfigBtn">▣ 保存配置</button>
+        </div>
+        <button type="button" class="theme-toggle" id="themeToggleBtn" title="切换明暗主题">☀</button>
+        <button type="button" class="topbar-icon-button" id="settingsBtn" title="打开设置中心" aria-label="打开设置中心">⚙</button>
+        <div class="status-card">
+          <div class="status-copy">
             <div class="state-row">
               <span class="state-dot" id="stateDot"></span>
               <span id="stateText">等待就绪</span>
             </div>
-            <span class="percent" id="percentText">0%</span>
+            <div class="header-progress"><div class="progress-bar" id="progressBar"></div></div>
           </div>
+          <span class="percent" id="percentText">0%</span>
         </div>
       </div>
+    </header>
 
-      <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
-
-      <div class="hero-actions">
-        <div class="ha-process">
-          <button type="button" class="btn-primary" id="addQueueBtn">＋ 加入队列</button>
-          <button type="button" class="btn-green" id="startQueueBtn">▷ 开始处理</button>
-          <button type="button" class="btn-amber" id="stopBtn">□ 停止</button>
-        </div>
-        <div class="ha-config">
-          <button type="button" class="btn-indigo" id="loadConfigBtn">↺ 加载配置</button>
-          <button type="button" class="btn-indigo" id="saveConfigBtn">▣ 保存配置</button>
-        </div>
+    <!-- ── Left Panel ─────────────────────────────── -->
+    <section class="left">
+      <div class="workspace-heading">
+        <div><strong>元数据工作区</strong><span>配置来源、归档规格与内容信息</span></div>
+        <button type="button" class="workspace-clear" id="clearBtn">清空编辑区</button>
       </div>
 
       <form class="form-scroll" id="configForm">
@@ -2770,17 +3005,6 @@ INDEX_HTML = r"""<!doctype html>
         </div>
       </form>
 
-      <div class="toolbox">
-        <strong>工具</strong>
-        <button type="button" id="failedBtn">△ 失败列表</button>
-        <button type="button" id="retryBtn">↻ 重试失败</button>
-        <span class="toolbox-sep"></span>
-        <button type="button" id="cookieBtn">○ Cookie</button>
-        <button type="button" id="blacklistBtn">⊘ 黑名单</button>
-        <button type="button" id="exportLogBtn">↓ 导出日志</button>
-        <span class="toolbox-sep"></span>
-        <button type="button" class="btn-red" id="clearBtn">✕ 清空编辑区</button>
-      </div>
     </section>
 
     <!-- ── Right Panel ─────────────────────────────── -->
@@ -2811,6 +3035,15 @@ INDEX_HTML = r"""<!doctype html>
       <div class="tab-panel" id="panel-failed">
         <div class="table-wrap">
           <table><thead><tr><th>文件</th><th>错误</th></tr></thead><tbody id="failedBody"></tbody></table>
+        </div>
+      </div>
+
+      <div class="right-commandbar">
+        <div class="selection-copy"><span class="state-dot"></span><span>队列操作</span></div>
+        <div class="ha-process">
+          <button type="button" class="btn-primary" id="addQueueBtn">＋ 加入队列</button>
+          <button type="button" class="btn-green" id="startQueueBtn">▷ 开始处理</button>
+          <button type="button" class="btn-red" id="stopBtn">□ 停止</button>
         </div>
       </div>
     </section>
@@ -2864,6 +3097,60 @@ INDEX_HTML = r"""<!doctype html>
     </div>
   </div>
 
+  <!-- ── Settings Center ───────────────────────── -->
+  <div class="modal-mask settings-mask" id="settingsModal">
+    <div class="modal settings-modal">
+      <div class="modal-head settings-head">
+        <div><strong>设置中心</strong><span>数据源、规则、配置与维护工具</span></div>
+        <button type="button" id="closeSettingsBtn">× 关闭</button>
+      </div>
+      <div class="modal-body settings-body">
+        <div class="settings-grid">
+          <section class="settings-card">
+            <div class="settings-card-head"><span class="settings-icon">◌</span><div><strong>数据源与访问</strong><span>平台凭据和 Web 访问控制</span></div></div>
+            <div class="settings-actions">
+              <button type="button" id="cookieBtn">平台 Cookie</button>
+              <button type="button" id="webTokenBtn">访问令牌</button>
+              <button type="button" id="blacklistBtn">标签黑名单</button>
+            </div>
+          </section>
+          <section class="settings-card">
+            <div class="settings-card-head"><span class="settings-icon">▣</span><div><strong>配置管理</strong><span>加载、保存、导入与导出</span></div></div>
+            <div class="settings-actions">
+              <button type="button" id="settingsLoadConfigBtn">加载配置</button>
+              <button type="button" id="settingsSaveConfigBtn">保存配置</button>
+              <button type="button" id="exportConfigBtn">导出配置</button>
+              <button type="button" id="importConfigBtn">导入配置</button>
+            </div>
+          </section>
+          <section class="settings-card">
+            <div class="settings-card-head"><span class="settings-icon">◇</span><div><strong>检查与诊断</strong><span>处理预览、运行状态和质量报告</span></div></div>
+            <div class="settings-actions">
+              <button type="button" id="previewRunBtn">预览处理</button>
+              <button type="button" id="healthBtn">健康检查</button>
+              <button type="button" id="qualityBtn">质量检查</button>
+            </div>
+          </section>
+          <section class="settings-card">
+            <div class="settings-card-head"><span class="settings-icon">↻</span><div><strong>任务与恢复</strong><span>批量导入、失败重试与操作快照</span></div></div>
+            <div class="settings-actions">
+              <button type="button" id="batchImportBtn">批量导入目录</button>
+              <button type="button" id="failedBtn">查看失败列表</button>
+              <button type="button" id="retryBtn">重试失败任务</button>
+              <button type="button" id="restoreSnapshotBtn">撤销目录改名</button>
+              <button type="button" id="exportLogBtn">导出运行日志</button>
+            </div>
+          </section>
+        </div>
+        <section class="settings-danger">
+          <div><strong>编辑区维护</strong><span>清空当前表单中的专辑参数，不会删除音频文件。</span></div>
+          <button type="button" class="btn-red" id="settingsClearBtn">清空编辑区</button>
+        </section>
+      </div>
+      <div class="modal-foot settings-foot"><span class="hint">修改平台 Cookie 后会写入容器配置目录。</span><button type="button" class="btn-primary" id="doneSettingsBtn">完成</button></div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script>
@@ -2905,6 +3192,7 @@ INDEX_HTML = r"""<!doctype html>
     const tagInput = document.getElementById('tagInput');
     const logBox = document.getElementById('logBox');
     const seriesModal = document.getElementById('seriesModal');
+    const settingsModal = document.getElementById('settingsModal');
     const seriesNameInput = document.getElementById('seriesNameInput');
     const seriesNumberInput = document.getElementById('seriesNumberInput');
     const customSelectPopover = document.createElement('div');
@@ -2951,6 +3239,15 @@ INDEX_HTML = r"""<!doctype html>
       el.textContent = message;
       el.classList.add('show');
       setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    function openSettingsModal() {
+      settingsModal.classList.add('show');
+      document.getElementById('closeSettingsBtn').focus();
+    }
+
+    function closeSettingsModal() {
+      settingsModal.classList.remove('show');
     }
 
     function setButtonBusy(button, busy, text) {
@@ -3466,6 +3763,7 @@ INDEX_HTML = r"""<!doctype html>
     document.getElementById('closeSeriesBtn').addEventListener('click', closeSeriesModal);
     document.getElementById('saveSeriesBtn').addEventListener('click', addSeriesFromModal);
     seriesModal.addEventListener('click', e => { if (e.target === seriesModal) closeSeriesModal(); });
+    settingsModal.addEventListener('click', e => { if (e.target === settingsModal) closeSettingsModal(); });
     [seriesNameInput, seriesNumberInput].forEach(input => {
       input.addEventListener('keydown', e => {
         if (e.key !== 'Enter') return;
@@ -4266,13 +4564,16 @@ INDEX_HTML = r"""<!doctype html>
       toast('目录名称已恢复');
     }
 
-    const toolbox = document.querySelector('.toolbox');
+    const toolbox = document.getElementById('settingsModal');
     if (toolbox) {
       const makeToolButton = (id, text, handler) => {
-        if (document.getElementById(id)) return;
-        const button = document.createElement('button');
-        button.type = 'button'; button.id = id; button.textContent = text; button.onclick = handler;
-        toolbox.appendChild(button);
+        let button = document.getElementById(id);
+        if (!button) {
+          button = document.createElement('button');
+          button.type = 'button'; button.id = id; button.textContent = text;
+          toolbox.appendChild(button);
+        }
+        button.onclick = handler;
       };
       makeToolButton('previewRunBtn', '预览处理', () => previewRun().catch(e => toast(e.message)));
       makeToolButton('healthBtn', '健康检查', () => showHealth().catch(e => toast(e.message)));
@@ -4331,6 +4632,11 @@ INDEX_HTML = r"""<!doctype html>
     };
     document.getElementById('saveConfigBtn').onclick = () => saveConfig().catch(e => toast(e.message));
     document.getElementById('loadConfigBtn').onclick = () => loadConfig().catch(e => toast(e.message));
+    document.getElementById('settingsBtn').onclick = openSettingsModal;
+    document.getElementById('closeSettingsBtn').onclick = closeSettingsModal;
+    document.getElementById('doneSettingsBtn').onclick = closeSettingsModal;
+    document.getElementById('settingsLoadConfigBtn').onclick = () => loadConfig().catch(e => toast(e.message));
+    document.getElementById('settingsSaveConfigBtn').onclick = () => saveConfig().catch(e => toast(e.message));
     document.getElementById('fetchBtn').onclick = () => fetchMetadata().catch(e => toast(e.message));
     document.getElementById('fetchAuthorBtn').onclick = () => fetchAuthorByTitle().catch(e => toast(e.message));
     document.getElementById('searchTitleBtn').onclick = () => searchByTitle().catch(e => toast(e.message));
@@ -4342,6 +4648,7 @@ INDEX_HTML = r"""<!doctype html>
       if (event.key === 'Escape') {
         closeTitleSearchResults();
         closeAuthorSearchResults();
+        closeSettingsModal();
       }
     });
     document.getElementById('addQueueBtn').onclick = () => addQueueFast().catch(e => toast(e.message));
@@ -4357,10 +4664,20 @@ INDEX_HTML = r"""<!doctype html>
       event.target.value = '';
     });
     document.getElementById('clearBtn').onclick = () => clearAll().catch(e => toast(e.message));
+    document.getElementById('settingsClearBtn').onclick = () => {
+      closeSettingsModal();
+      clearAll().catch(e => toast(e.message));
+    };
     document.getElementById('failedBtn').onclick = () => document.querySelector('[data-tab="failed"]').click();
     document.getElementById('retryBtn').onclick = () => retryFailedQueue().catch(e => toast(e.message));
-    document.getElementById('cookieBtn').onclick = () => openCookieModal().catch(e => toast(e.message));
-    document.getElementById('blacklistBtn').onclick = () => openBlacklistModal().catch(e => toast(e.message));
+    document.getElementById('cookieBtn').onclick = () => {
+      closeSettingsModal();
+      openCookieModal().catch(e => toast(e.message));
+    };
+    document.getElementById('blacklistBtn').onclick = () => {
+      closeSettingsModal();
+      openBlacklistModal().catch(e => toast(e.message));
+    };
     document.getElementById('exportLogBtn').onclick = exportLogs;
     document.getElementById('closeCookieBtn').onclick = () => document.getElementById('cookieModal').classList.remove('show');
     document.getElementById('saveCookieBtn').onclick = () => saveCookies().catch(e => toast(e.message));
