@@ -2480,6 +2480,12 @@ INDEX_HTML = r"""<!doctype html>
       .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .grid-3 .span-3 { grid-column: span 2; }
     }
+    @media (max-width: 1500px) and (min-width: 901px) {
+      .source-controls { grid-template-columns: minmax(160px, .78fr) minmax(0, 1.22fr); }
+      .source-controls > button { min-height: 42px; }
+      .source-controls > button:nth-of-type(1) { grid-column: 1; }
+      .source-controls > button:nth-of-type(2) { grid-column: 2; }
+    }
     @media (min-width: 1181px) and (max-height: 880px) {
       h1 { font-size: 19px; }
       .percent { font-size: 22px; }

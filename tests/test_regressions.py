@@ -112,6 +112,8 @@ class RegressionTests(unittest.TestCase):
         self.assertIn('class="source-controls"', INDEX_HTML)
         self.assertIn(".source-controls > input,", INDEX_HTML)
         self.assertIn("width: 100%; min-width: 0; min-height: 46px;", INDEX_HTML)
+        self.assertIn("@media (max-width: 1500px) and (min-width: 901px)", INDEX_HTML)
+        self.assertIn(".source-controls > button:nth-of-type(2) { grid-column: 2; }", INDEX_HTML)
         self.assertNotIn('class="source-action"', INDEX_HTML)
 
     def test_ypshuo_author_candidates_require_exact_title_and_are_distinct(self):
