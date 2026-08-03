@@ -368,8 +368,54 @@ def _fanqie_search_by_id(book_id: str) -> dict:
         return {}
     except Exception: return {}
 
+def _fanqie_plugin_detail(book_id: str) -> dict:
+    session = get_safe_session()
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36", "Accept": "application/json, text/plain, */*", "Referer": "https://fanqienovel.com/"}
+    endpoints = [
+        ("https://fanqienovel.com/api/reader/book/detail", {"bookId": book_id}),
+        ("https://fanqienovel.com/api/book/detail", {"book_id": book_id}),
+        ("https://novel.snssdk.com/api/novel/book/detail/v1/", {"book_id": book_id}),
+        ("https://api5-normal-lf.fqnovel.com/reading/bookapi/detail/v/", {"book_id": book_id, "aid": "1967", "iid": "0"}),
+    ]
+    result = {}
+    for url, params in endpoints:
+        try:
+            response = session.get(url, params=params, headers=headers, timeout=15)
+            data = response.json().get("data") or {}
+            title = str(data.get("book_name") or data.get("title") or data.get("name") or "").strip()
+            if not title:
+                continue
+            tags_value = data.get("tags") or data.get("tag_list") or data.get("labels") or data.get("tag_name") or []
+            if isinstance(tags_value, str):
+                tags = [part.strip() for part in re.split(r"[,，|]", tags_value) if part.strip()]
+            elif isinstance(tags_value, list):
+                tags = [str(item.get("name") or item.get("tag_name") or item.get("tagName") or item.get("value") or "").strip() if isinstance(item, dict) else str(item).strip() for item in tags_value]
+            else:
+                tags = []
+            result = {"name": title, "title": title, "album": title, "bestCover": data.get("thumb_url") or data.get("cover") or "", "cover": data.get("thumb_url") or data.get("cover") or "", "pic": data.get("thumb_url") or data.get("cover") or "", "author": str(data.get("author") or data.get("author_name") or "").strip(), "announcer": str(data.get("anchor") or data.get("narrator") or "").strip(), "artist": str(data.get("anchor") or data.get("narrator") or "").strip(), "desc": str(data.get("abstract") or data.get("description") or data.get("desc") or "").strip(), "info": str(data.get("abstract") or data.get("description") or data.get("desc") or "").strip(), "releaseDate": "", "category": str(data.get("category") or data.get("category_name") or "").strip(), "finished": "完结" if str(data.get("creation_status")) == "1" else "连载" if data.get("creation_status") is not None else "", "tags": list(dict.fromkeys(tag for tag in tags if tag))}
+            break
+        except Exception:
+            continue
+    if not result:
+        raise ValueError("番茄详情接口未返回有效数据")
+    try:
+        response = session.get("https://fanqienovel.com/api/reader/directory/detail", params={"bookId": book_id}, headers=headers, timeout=15)
+        data = response.json().get("data") or {}
+        count = 0
+        for volume in data.get("chapterListWithVolume") or []:
+            count += len(volume) if isinstance(volume, list) else len(volume.get("chapterList") or []) if isinstance(volume, dict) else 0
+        result["chapter_count"] = count
+    except Exception:
+        pass
+    return result
+
+
 def fanqie_api(album_id: str) -> dict:
     try:
+        try:
+            return _fanqie_plugin_detail(str(album_id).strip())
+        except Exception:
+            pass
         share_info = _fanqie_get_share_info(album_id)
 
         session = get_safe_session()
