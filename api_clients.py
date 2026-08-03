@@ -387,6 +387,7 @@ def _qidian_plugin_detail(book_id: str) -> dict:
     """Use the same public search/detail chain as qidian-scraper-wasm."""
     session = get_safe_session()
     headers = {
+        "Platform": "10",
         "AppId": "50",
         "AreaId": "501000",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/132.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781",
@@ -476,7 +477,7 @@ def search_platform_metadata(platform: str, keyword: str, limit: int = 12) -> li
                 add(item.get("book_id"), item.get("book_name"), item.get("author"), item.get("thumb_url"), item.get("abstract"), str(item.get("tags") or "").split(","))
     elif platform == "起点听书":
         url = "https://qdcg.qidian.com/api/search/list"
-        data = session.get(url, params={"key": keyword, "pageIndex": 1, "pageSize": limit, "site": 3, "model": 1}, headers={**headers, "AppId": "50", "AreaId": "501000"}, timeout=20).json()
+        data = session.get(url, params={"key": keyword, "pageIndex": 1, "pageSize": limit, "site": 3, "model": 1}, headers={**headers, "Platform": "10", "AppId": "50", "AreaId": "501000"}, timeout=20).json()
         for item in ((data.get("Data") or {}).get("items") or []):
             add(item.get("bookId"), item.get("bookName"), item.get("authorName"), "", item.get("description"), [item.get("categoryName")] if item.get("categoryName") else [])
     elif platform == "酷我听书":
