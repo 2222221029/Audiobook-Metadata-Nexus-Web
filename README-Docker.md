@@ -10,13 +10,15 @@
 ## 快速启动
 
 ```bash
-docker compose build
-docker compose up -d
+docker compose pull
+docker compose up -d --force-recreate
 ```
+
+Compose 默认使用 GHCR 的 `latest` 标签，并在每次启动前检查远端镜像。如需锁定到某次构建，可在 `.env` 中设置 `AUDIOMETA_IMAGE_TAG=sha-提交短哈希`。
 
 如需保护 Web 页面，可在 `docker-compose.yml` 设置 `AUDIOMETA_WEB_TOKEN`，然后在页面工具栏点击“设置访问令牌”。
 
-喜马拉雅公开接口会对部分专辑隐藏 APP 属性标签。程序会自动使用多接口、页面结构化数据和高置信度分类兜底；如仍缺少标签，可选填 `.env` 中的 `XIMALAYA_COOKIE`，使用你自己的喜马拉雅登录 Cookie 请求完整数据。Cookie 只通过环境变量读取，不会写入仓库。
+程序会同时获取喜马拉雅网页版标签和 APP 专辑详情中的移动端标签，并只解析当前专辑的标签列表，避免混入评论或推荐专辑数据。如专辑对未登录用户隐藏数据，可选填 `.env` 中的 `XIMALAYA_COOKIE`，使用你自己的喜马拉雅登录 Cookie 请求。Cookie 只通过环境变量读取，不会写入仓库。
 
 访问地址：
 
@@ -35,7 +37,8 @@ http://localhost:8787
 ```yaml
 services:
   audiometa-nexus:
-    image: audiometa-nexus:local
+    image: ghcr.io/2222221029/audiobook-metadata-nexus-web:${AUDIOMETA_IMAGE_TAG:-latest}
+    pull_policy: always
     container_name: audiometa-nexus
     restart: unless-stopped
     ports:

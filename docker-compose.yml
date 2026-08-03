@@ -2,7 +2,8 @@ name: audiobook-metadata-nexus
 
 services:
   audiometa-nexus:
-    image: ghcr.io/2222221029/audiobook-metadata-nexus-web:latest
+    image: ghcr.io/2222221029/audiobook-metadata-nexus-web:${AUDIOMETA_IMAGE_TAG:-latest}
+    pull_policy: always
     container_name: audiometa-nexus
     restart: unless-stopped
     ports:

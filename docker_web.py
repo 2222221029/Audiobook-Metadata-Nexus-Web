@@ -286,7 +286,7 @@ def collect_tags_and_year_from_payload(payload):
                 "tagName", "labelName", "categoryName", "categoryTitle", "displayName",
                 "keyword", "name", "displayTags", "albumTags", "tags", "tag_list",
                 "newShowTags", "newShowTags2", "newShowTags3", "newShowTags4",
-                "showTags", "showTags2", "showTags3", "categoryShowTags",
+                "showTags", "showTags2", "showTags3", "showTagList", "categoryShowTags",
                 "metaDataTags", "metadataValues", "albumMetaValueInfos", "relativeTags",
                 "metadataValueName", "metadataName", "showName",
             ):
@@ -312,6 +312,59 @@ def collect_tags_and_year_from_payload(payload):
 
     extract_from_dict(payload)
     return list(tags_set), release_date
+
+
+def collect_ximalaya_app_tags(payload):
+    """Collect only tags belonging to the current album in APP detail payloads."""
+    tags = []
+    tag_keys = (
+        "showTagList", "newShowTags", "newShowTags2", "newShowTags3", "newShowTags4",
+        "showTags", "showTags2", "showTags3", "categoryShowTags", "metaDataTags",
+        "metadataValues", "albumMetaValueInfos", "relativeTags",
+    )
+    name_keys = (
+        "tagName", "labelName", "displayName", "metadataValueName", "showName",
+        "name", "title", "text", "value",
+    )
+
+    def add(value):
+        for part in re.split(r"[,，|]+", str(value or "")):
+            part = part.strip()
+            if 1 < len(part) <= 20 and "http" not in part and part not in tags:
+                tags.append(part)
+
+    def collect(value):
+        if isinstance(value, str):
+            add(value)
+        elif isinstance(value, list):
+            for item in value:
+                collect(item)
+        elif isinstance(value, dict):
+            name = first_value(value, *name_keys)
+            if name:
+                add(name)
+            for key in tag_keys:
+                if key in value:
+                    collect(value[key])
+
+    data = payload.get("data", payload) if isinstance(payload, dict) else {}
+    roots = [data]
+    if isinstance(data, dict):
+        roots.extend(
+            value for value in (
+                data.get("detail"),
+                data.get("album"),
+                data.get("albumDetailInfo"),
+                (data.get("albumDetailInfo") or {}).get("albumInfo")
+                if isinstance(data.get("albumDetailInfo"), dict) else None,
+            )
+            if isinstance(value, dict)
+        )
+    for root in roots:
+        for key in tag_keys:
+            if key in root:
+                collect(root[key])
+    return tags
 
 
 def normalize_cover_url(data):
@@ -363,42 +416,22 @@ def normalize_ximalaya_payload(raw):
     return normalized
 
 
-def merge_ximalaya_inferred_tags(data, raw=None):
-    """Infer only high-confidence APP labels when public APIs hide metadata."""
-    tags = list(data.get("tags") or [])
-    raw = raw or data.get("_ximalaya_raw") or {}
-    searchable = clean_html_tags(json.dumps(raw, ensure_ascii=False))
-    searchable += " " + " ".join(str(data.get(key) or "") for key in ("title", "subtitle", "desc", "category"))
-
-    def add(tag):
-        if tag not in tags:
-            tags.append(tag)
-
-    category_id = str(first_value(raw.get("albumPageMainInfo", raw), "categoryId"))
-    if data.get("category") == "有声图书" or category_id == "1001":
-        add("有声图书")
-    if any(word in searchable for word in ("影视原著", "同名原著", "电影原著", "电视剧原著", "历史正剧", "影视级")):
-        add("影视原著")
-    if any(word in searchable for word in ("历史小说", "历史正剧")):
-        add("历史小说")
-    album_type = first_value(raw.get("albumPageMainInfo", raw), "albumType", "trackType")
-    is_paid = first_value(raw.get("albumPageMainInfo", raw), "isPaid", "albumPayType")
-    if (data.get("category") == "有声图书" or category_id == "1001") and (str(album_type) == "7" or str(is_paid).lower() in ("true", "2")):
-        add("出版物")
-    return tags
-
-
 def extract_advanced_info(album_id, api_source):
-    tags_set = set()
+    tags_list = []
     release_date = ""
     session = get_safe_session()
+
+    def add_tags(values):
+        for tag in values or []:
+            if tag and tag not in tags_list:
+                tags_list.append(tag)
 
     def merge_payload(payload):
         nonlocal release_date
         tags, year = collect_tags_and_year_from_payload(payload)
         if api_source == "喜马拉雅":
             tags = [tag for tag in tags if tag not in {"其他", "喜马拉雅", "喜马拉雅听书", "喜马拉雅电台", "喜马拉雅好声音", "网络电台", "个人电台", "音频"}]
-        tags_set.update(tags)
+        add_tags(tags)
         if year and (not release_date or year > release_date):
             release_date = year
 
@@ -410,42 +443,20 @@ def extract_advanced_info(album_id, api_source):
         if app_cookie:
             app_headers["Cookie"] = app_cookie
         urls = [
-            (f"https://m.ximalaya.com/m-revision/page/album/v1/detail?albumId={album_id}", {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X)"}),
+            (f"https://mobile.ximalaya.com/mobile-album/album/detail?albumId={album_id}&device=android", app_headers),
             (f"https://m.ximalaya.com/m-revision/page/album/v2/queryAlbumPage/{album_id}?albumCounts=track", {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X)"}),
-            (f"https://m.ximalaya.com/m-revision/page/album/queryAlbumPage/{album_id}?albumCounts=track", {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X)"}),
-            (f"https://mobile.ximalaya.com/mobile-album/album/page?albumId={album_id}&device=android&source=0&ac=WIFI&supportWebp=true&isAsc=true&page=1&pageSize=20", app_headers),
-            (f"https://mobile.ximalaya.com/mobile/v1/album?albumId={album_id}&device=android", {"User-Agent": "ting_6.7.9(unknown,android)"}),
-            (f"https://www.ximalaya.com/revision/album/v1/simple?albumId={album_id}", {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}),
         ]
         for url, headers in urls:
             try:
                 response = session.get(url, headers=headers, timeout=5)
                 if response.status_code == 200:
-                    merge_payload(response.json())
+                    payload = response.json()
+                    add_tags(collect_ximalaya_app_tags(payload))
+                    _, year = collect_tags_and_year_from_payload(payload)
+                    if year and (not release_date or year > release_date):
+                        release_date = year
             except Exception:
                 pass
-        try:
-            page = session.get(
-                f"https://www.ximalaya.com/album/{album_id}",
-                headers={"User-Agent": DESKTOP_UA, "Referer": "https://www.ximalaya.com/"},
-                timeout=8,
-            )
-            if page.status_code == 200:
-                html = page.text
-                for block in re.findall(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, re.I | re.S):
-                    try:
-                        merge_payload(json.loads(block.strip()))
-                    except Exception:
-                        pass
-                for content in re.findall(r'<meta[^>]+property=["\']article:tag["\'][^>]+content=["\']([^"\']+)', html, re.I):
-                    merge_payload({"tags": re.split(r"[,，|]", content)})
-                for candidate in re.findall(r'"(?:albumTags|displayTags|newShowTags|newShowTags2|tags|categoryName)"\s*:\s*(\[[^\]]*\]|"[^"]+")', html, re.I):
-                    try:
-                        merge_payload({"tags": json.loads(candidate)})
-                    except Exception:
-                        pass
-        except Exception as exc:
-            _debug_log(f"[Ximalaya page fallback] {exc}")
     elif api_source == "懒人听书":
         try:
             response = session.get(
@@ -457,10 +468,10 @@ def extract_advanced_info(album_id, api_source):
                 for match in re.findall(r'<div[^>]*class="[^"]*tag[^"]*"[^>]*>([^<]+)</div>', response.text, re.IGNORECASE):
                     tag = match.strip()
                     if 1 < len(tag) <= 12:
-                        tags_set.add(tag)
+                        add_tags([tag])
         except Exception:
             pass
-    return list(tags_set), release_date
+    return tags_list, release_date
 
 
 def merge_advanced_fetch_data(data, adv_tags, adv_year):
@@ -515,10 +526,9 @@ def fetch_api_metadata(api_source, api_id):
     if api_source == "喜马拉雅":
         raw = ximalaya_api("album", api_id)
         data = normalize_ximalaya_payload(raw)
-        if len(data.get("tags") or []) < 2 or not data.get("releaseDate"):
-            adv_tags, adv_year = extract_advanced_info(api_id, api_source)
-            data = merge_advanced_fetch_data(data, adv_tags, adv_year)
-        data["tags"] = merge_ximalaya_inferred_tags(data, raw)
+        # APP labels are a separate list and must be fetched even when web tags exist.
+        adv_tags, adv_year = extract_advanced_info(api_id, api_source)
+        data = merge_advanced_fetch_data(data, adv_tags, adv_year)
         return normalize_metadata(data, api_source)
     if api_source == "懒人听书":
         data = lanren_api(api_id)
