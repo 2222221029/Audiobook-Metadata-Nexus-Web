@@ -479,7 +479,9 @@ def search_platform_metadata(platform: str, keyword: str, page: int = 1, limit: 
         url = "https://qdcg.qidian.com/api/search/list"
         data = session.get(url, params={"key": keyword, "pageIndex": page, "pageSize": limit, "site": 3, "model": 1}, headers={**headers, "Platform": "10", "AppId": "50", "AreaId": "501000"}, timeout=20).json()
         for item in ((data.get("Data") or {}).get("items") or []):
-            add(item.get("bookId"), item.get("bookName"), item.get("authorName"), "", item.get("description"), [item.get("categoryName")] if item.get("categoryName") else [])
+            book_id = item.get("bookId")
+            cover = f"https://bookcover.yuewen.com/qdbimg/349573/{book_id}" if book_id else ""
+            add(book_id, item.get("bookName"), item.get("authorName"), cover, item.get("description"), [item.get("categoryName")] if item.get("categoryName") else [])
     elif platform == "酷我听书":
         data = session.get("http://search.kuwo.cn/r.s", params={"pn": page - 1, "rn": limit, "all": keyword, "ft": "album", "newsearch": 1, "rformat": "json", "encoding": "utf8", "plat": "pc", "pcjson": 1}, headers=headers, timeout=20).json()
         for item in data.get("albumlist") or data.get("abslist") or []:

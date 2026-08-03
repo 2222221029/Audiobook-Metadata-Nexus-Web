@@ -2039,14 +2039,18 @@ INDEX_HTML = r"""<!doctype html>
     }
     .cover-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
     .cover-meta { margin-top: 5px; color: var(--text-3); font-size: 11px; text-align: center; }
-    .search-results { position: fixed; z-index: 1200; inset: 50% auto auto 50%; transform: translate(-50%, -50%); display: grid; gap: 7px; width: min(680px, calc(100vw - 32px)); max-height: min(620px, calc(100vh - 80px)); overflow: auto; padding: 18px; background: var(--surface); border: 1px solid var(--border-med); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
-    .search-results::before { content: '选择搜索结果'; display: block; margin-bottom: 4px; color: var(--text); font-size: 17px; font-weight: 800; }
+    .search-results { position: fixed; z-index: 1200; inset: 50% auto auto 50%; transform: translate(-50%, -50%); display: grid; gap: 9px; width: min(760px, calc(100vw - 32px)); max-height: min(680px, calc(100vh - 56px)); overflow: auto; padding: 0 18px 18px; background: var(--surface); border: 1px solid var(--border-med); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+    .search-dialog-head { position: sticky; top: 0; z-index: 1; display:flex; align-items:center; justify-content:space-between; margin: 0 -18px 8px; padding: 17px 18px 13px; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .search-dialog-head strong { color: var(--text); font-size: 17px; }
+    .search-dialog-close { width: 32px; height: 32px; border: 0; border-radius: 50%; color: var(--text-2); background: var(--surface-2); cursor: pointer; font-size: 20px; line-height: 1; }
+    .search-dialog-close:hover { color: var(--text); background: var(--primary-bg); }
     .search-results[hidden] { display: none; }
     .search-results-backdrop { position: fixed; z-index: 1199; inset: 0; background: rgba(0,0,0,.62); backdrop-filter: blur(3px); }
-    .search-result { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; width: 100%; padding: 8px 10px; text-align: left; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; }
+    .search-result { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 10px 12px; text-align: left; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: border-color .18s, transform .18s, background .18s; }
     .search-result:hover { border-color: var(--primary); background: var(--primary-bg); }
-    .search-result img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; background: var(--surface-3); }
-    .search-result-title { font-weight: 700; }
+    .search-result:hover { transform: translateY(-1px); }
+    .search-result img { width: 58px; height: 58px; object-fit: cover; border-radius: 8px; background: var(--surface-3); }
+    .search-result-title { display:block; overflow:hidden; font-weight: 700; line-height:1.45; white-space:normal; overflow-wrap:anywhere; }
     .search-result-meta { margin-top: 3px; color: var(--text-3); font-size: 12px; }
     .search-pagination { display:flex; justify-content:space-between; gap:8px; margin-top:10px; }
 
@@ -3396,11 +3400,17 @@ INDEX_HTML = r"""<!doctype html>
       const box = document.getElementById('titleSearchResults');
       const backdrop = document.getElementById('titleSearchBackdrop');
       box.replaceChildren();
-      if (!results.length) { box.textContent = '没有找到匹配专辑'; box.hidden = false; backdrop.hidden = false; return; }
+      const head = document.createElement('div');
+      head.className = 'search-dialog-head';
+      head.innerHTML = '<strong>选择搜索结果</strong><button type="button" class="search-dialog-close" aria-label="关闭">×</button>';
+      head.querySelector('button').onclick = closeTitleSearchResults;
+      box.appendChild(head);
+      if (!results.length) { const empty = document.createElement('div'); empty.className = 'search-result-meta'; empty.textContent = '没有找到匹配专辑'; box.appendChild(empty); box.hidden = false; backdrop.hidden = false; return; }
       results.forEach(item => {
         const button = document.createElement('button');
         button.type = 'button'; button.className = 'search-result';
         const cover = document.createElement('img'); cover.src = item.cover || ''; cover.alt = '';
+        cover.onerror = () => { cover.removeAttribute('src'); cover.alt = '暂无封面'; };
         const body = document.createElement('span');
         body.innerHTML = `<span class="search-result-title"></span><span class="search-result-meta"></span>`;
         body.querySelector('.search-result-title').textContent = item.title || '未命名专辑';
