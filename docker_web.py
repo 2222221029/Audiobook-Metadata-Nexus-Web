@@ -590,7 +590,41 @@ def normalize_metadata(data, platform=""):
 
 
 
-def fetch_api_metadata(api_source, api_id):
+def _merge_fanqie_search_result(raw, search_result):
+    raw = dict(raw or {})
+    if not isinstance(search_result, dict):
+        return raw
+    field_map = (
+        ("title", "title"),
+        ("name", "title"),
+        ("album", "title"),
+        ("author", "author"),
+        ("announcer", "narrator"),
+        ("artist", "narrator"),
+        ("cover", "cover"),
+        ("bestCover", "cover"),
+        ("pic", "cover"),
+        ("desc", "desc"),
+        ("info", "desc"),
+        ("category", "category"),
+        ("finished", "finished"),
+        ("chapter_count", "chapter_count"),
+        ("releaseDate", "release_date"),
+    )
+    for target, source_key in field_map:
+        if not raw.get(target) and search_result.get(source_key):
+            raw[target] = search_result[source_key]
+    tags = list(raw.get("tags") or [])
+    for tag in search_result.get("tags") or []:
+        tag = str(tag or "").strip()
+        if tag and tag not in tags:
+            tags.append(tag)
+    if tags:
+        raw["tags"] = tags
+    return raw
+
+
+def fetch_api_metadata(api_source, api_id, search_result=None):
     api_source = (api_source or "").strip()
     api_id = (api_id or "").strip()
     if not api_id:
@@ -613,7 +647,8 @@ def fetch_api_metadata(api_source, api_id):
     if api_source == "酷我听书":
         return normalize_metadata(kuwo_api(api_id), api_source)
     if api_source == "番茄畅听":
-        return normalize_metadata(fanqie_api(api_id), api_source)
+        raw = _merge_fanqie_search_result(fanqie_api(api_id), search_result)
+        return normalize_metadata(raw, api_source)
     if api_source == "起点听书":
         cookie = get_platform_cookies().get("qidian", "")
         return normalize_metadata(qidian_api(api_id, cookie_str=cookie), api_source)
@@ -1527,7 +1562,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                     raise ValueError("配置数据格式无效")
                 return json_response(self, {"ok": True, "params": save_params(imported)})
             if path == "/api/fetch-metadata":
-                meta = fetch_api_metadata(payload.get("api_source"), payload.get("api_id"))
+                meta = fetch_api_metadata(payload.get("api_source"), payload.get("api_id"), payload.get("search_result"))
                 return json_response(self, {"ok": True, "metadata": meta})
             if path == "/api/search-metadata":
                 page = max(1, int(payload.get("page") or 1))
@@ -5416,12 +5451,12 @@ INDEX_HTML = r"""<!doctype html>
       toast('元数据已应用');
     }
 
-    async function fetchMetadata() {
+    async function fetchMetadata(searchResult) {
       const btn = document.getElementById('fetchBtn');
       setButtonBusy(btn, true, '获取中...');
       toast('正在获取元数据...');
       try {
-        const data = await api('/api/fetch-metadata', { method: 'POST', body: JSON.stringify({api_source: form.api_source.value, api_id: form.api_id.value}), timeoutMs: 90000 });
+        const data = await api('/api/fetch-metadata', { method: 'POST', body: JSON.stringify({api_source: form.api_source.value, api_id: form.api_id.value, search_result: searchResult || null}), timeoutMs: 90000 });
         applyMetadata(data.metadata);
         toast('元数据获取成功');
       } finally {
@@ -5598,6 +5633,7 @@ INDEX_HTML = r"""<!doctype html>
         meta.className = 'search-result-meta';
         const metaParts = [];
         if (item.author) metaParts.push(item.author);
+        if (item.narrator) metaParts.push(item.narrator);
         if (item.id) metaParts.push(`ID ${item.id}`);
         meta.textContent = metaParts.join(' · ');
         body.append(title, meta);
@@ -5623,9 +5659,21 @@ INDEX_HTML = r"""<!doctype html>
         pick.innerHTML = `${_UI_ICONS.arrowRight}<span>选择</span>`;
         button.append(cover, body, pick);
         button.onclick = async () => {
-          form.api_id.value = item.id;
+          const selected = {
+            id: item.id,
+            title: item.title,
+            author: item.author,
+            narrator: item.narrator,
+            cover: item.cover,
+            desc: item.desc,
+            tags: Array.isArray(item.tags) ? item.tags : [],
+            chapter_count: item.chapter_count || 0,
+            finished: item.finished || '',
+            category: item.category || '',
+          };
+          form.api_id.value = selected.id;
           closeTitleSearchResults();
-          await fetchMetadata();
+          await fetchMetadata(selected);
         };
         box.appendChild(button);
       });

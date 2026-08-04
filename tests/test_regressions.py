@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from api_clients import _matching_ypshuo_authors
+from api_clients import _fanqie_parse_search_book, _fanqie_search_books, _matching_ypshuo_authors, search_platform_metadata
 from metadata_helpers import build_output_folder_name
 from processor import load_operation_snapshot, resolve_output_folder_path, restore_operation_snapshot, save_operation_snapshot
 from docker_web import (
@@ -373,6 +373,91 @@ class RegressionTests(unittest.TestCase):
             self.assertTrue(result["restored"])
             self.assertTrue(original.exists())
             self.assertFalse(renamed.exists())
+
+    def test_fanqie_search_result_parser_matches_plugin_fields(self):
+        item = _fanqie_parse_search_book({
+            "book_id": "7123456789012345678",
+            "book_name": "\u6d4b\u8bd5\u4e66\u540d",
+            "author": "\u4f5c\u8005",
+            "anchor": "\u6f14\u64ad",
+            "thumb_url": "https://example.com/cover.jpg",
+            "abstract": "\u7b80\u4ecb",
+            "tags": [{"tag_name": "\u7384\u5e7b"}, "\u90fd\u5e02"],
+            "tag_name": "\u60ac\u7591",
+            "creation_status": 0,
+            "chapter_number": 88,
+            "category": "\u6709\u58f0\u5c0f\u8bf4",
+        })
+        self.assertEqual(item["id"], "7123456789012345678")
+        self.assertEqual(item["title"], "\u6d4b\u8bd5\u4e66\u540d")
+        self.assertEqual(item["narrator"], "\u6f14\u64ad")
+        self.assertEqual(item["tags"], ["\u7384\u5e7b", "\u90fd\u5e02", "\u60ac\u7591"])
+        self.assertEqual(item["finished"], "\u5b8c\u7ed3")
+        self.assertEqual(item["chapter_count"], 88)
+
+    def test_fanqie_search_request_uses_plugin_params(self):
+        with patch("api_clients.get_safe_session") as get_session:
+            response = get_session.return_value.post.return_value
+            response.status_code = 200
+            response.json.return_value = {
+                "data": {"search_data": [{"books": [{"book_id": "1", "book_name": "Book"}]}]}
+            }
+            items = _fanqie_search_books("demo", page=2, limit=15)
+            self.assertEqual([item["id"] for item in items], ["1"])
+            call_args = get_session.return_value.post.call_args
+            kwargs = call_args.kwargs
+            self.assertEqual(call_args.args[0], "https://api5-sinfonlinec.novelfm.com/novelfm/bookmall/search/page/v1/")
+            self.assertEqual(kwargs["json"], {"query": "demo", "limit": 15, "offset": 15})
+            self.assertEqual(
+                kwargs["headers"]["User-Agent"],
+                "com.xs.fm/608 (Linux; U; Android 9; zh_CN; 2210132C; Build/PQ3A.190605.07021633;tt-ok/3.12.13.17)",
+            )
+            self.assertIn("device_id", kwargs["params"])
+            self.assertIn("iid", kwargs["params"])
+            self.assertIn("_rticket", kwargs["params"])
+
+    @patch("api_clients._fanqie_search_books")
+    def test_fanqie_search_platform_metadata_keeps_plugin_fields(self, search_mock):
+        search_mock.return_value = [{
+            "id": "1",
+            "title": "\u641c\u7d22\u6807\u9898",
+            "author": "\u4f5c\u8005",
+            "narrator": "\u6f14\u64ad",
+            "cover": "https://example.com/cover.jpg",
+            "desc": "\u7b80\u4ecb",
+            "tags": ["\u6807\u7b7e"],
+            "chapter_count": 12,
+            "finished": "\u5b8c\u7ed3",
+            "category": "\u6709\u58f0\u5c0f\u8bf4",
+        }]
+        results, has_next = search_platform_metadata("\u756a\u8304\u7545\u542c", "\u641c\u7d22\u6807\u9898")
+        self.assertEqual(results[0]["narrator"], "\u6f14\u64ad")
+        self.assertEqual(results[0]["chapter_count"], 12)
+        self.assertEqual(results[0]["finished"], "\u5b8c\u7ed3")
+
+    @patch("docker_web.fanqie_api")
+    def test_fetch_fanqie_metadata_uses_selected_search_result(self, fanqie_mock):
+        fanqie_mock.return_value = {"title": "\u540e\u53f0\u6807\u9898"}
+        meta = fetch_api_metadata("\u756a\u8304\u7545\u542c", "123", {
+            "title": "\u641c\u7d22\u6807\u9898",
+            "author": "\u641c\u7d22\u4f5c\u8005",
+            "narrator": "\u641c\u7d22\u6f14\u64ad",
+            "cover": "https://example.com/cover.jpg",
+            "desc": "\u641c\u7d22\u7b80\u4ecb",
+            "tags": ["\u6807\u7b7e"],
+            "finished": "\u5b8c\u7ed3",
+            "category": "\u6709\u58f0\u5c0f\u8bf4",
+        })
+        self.assertEqual(meta["title"], "\u540e\u53f0\u6807\u9898")
+        self.assertEqual(meta["author"], "\u641c\u7d22\u4f5c\u8005")
+        self.assertEqual(meta["anchor"], "\u641c\u7d22\u6f14\u64ad")
+        self.assertIn("\u6807\u7b7e", meta["tags"])
+
+    def test_fanqie_click_flow_passes_selected_search_result(self):
+        self.assertIn("async function fetchMetadata(searchResult)", INDEX_HTML)
+        self.assertIn("search_result: searchResult || null", INDEX_HTML)
+        self.assertIn("const selected = {", INDEX_HTML)
+        self.assertIn("await fetchMetadata(selected);", INDEX_HTML)
 
 
 if __name__ == "__main__":

@@ -340,36 +340,151 @@ def _fanqie_get_share_info(book_id: str) -> dict:
         return parse_novelfm_share_response(resp.json())
     except Exception as e: return {}
 
-def _fanqie_search_by_id(book_id: str) -> dict:
+_FANQIE_APP_UA = "com.xs.fm/608 (Linux; U; Android 9; zh_CN; 2210132C; Build/PQ3A.190605.07021633;tt-ok/3.12.13.17)"
+_FANQIE_SEARCH_URL = "https://api5-sinfonlinec.novelfm.com/novelfm/bookmall/search/page/v1/"
+_FANQIE_SEARCH_PARAMS = {
+    "device_platform": "android",
+    "os": "android",
+    "aid": "3040",
+    "app_name": "novel_fm",
+    "version_code": "608",
+    "device_id": "3942194090368537",
+    "iid": "1109875180222825",
+}
+
+
+def _fanqie_finished_status(book):
+    creation_status = book.get("creation_status")
+    if creation_status is not None:
+        return "完结" if str(creation_status) == "0" else "连载"
+    serial_status = book.get("serial_status")
+    if serial_status:
+        text = str(serial_status)
+        return "完结" if "完" in text else "连载"
+    return ""
+
+
+def _fanqie_parse_search_book(book):
+    book = dict(book or {})
+    item_id = str(book.get("book_id") or book.get("id") or "").strip()
+    title = str(book.get("book_name") or book.get("title") or book.get("name") or "").strip()
+    tags = []
+    tags_raw = book.get("tags")
+    if tags_raw is None:
+        tags_raw = book.get("tag_list") or book.get("labels") or []
+    if isinstance(tags_raw, list):
+        for tag in tags_raw:
+            if isinstance(tag, dict):
+                name = str(tag.get("tag_name") or tag.get("name") or tag.get("tagName") or tag.get("value") or "").strip()
+            else:
+                name = str(tag).strip()
+            if name and name not in tags:
+                tags.append(name)
+    elif isinstance(tags_raw, str) and tags_raw:
+        for part in re.split(r"[,，;；|]", tags_raw):
+            part = part.strip()
+            if part and part not in tags:
+                tags.append(part)
+    tag_name = str(book.get("tag_name") or "").strip()
+    if tag_name and tag_name not in tags:
+        tags.append(tag_name)
+    chapter_count = book.get("chapter_number") or book.get("chapter_count") or book.get("serial_count") or ""
     try:
-        params = {"device_platform": "android", "os": "android", "aid": "3040", "app_name": "novel_fm", "version_code": "608", "device_id": "3942194090368537", "iid": "1109875180222825", "_rticket": str(int(time.time() * 1000))}
-        url = "https://api5-sinfonlinec.novelfm.com/novelfm/bookmall/search/page/v1/"
-        headers = {"Content-Type": "application/json; charset=utf-8", "User-Agent": "com.xs.fm/608"}
+        chapter_count = int(chapter_count)
+    except Exception:
+        chapter_count = 0
+    return {
+        "id": item_id,
+        "title": title,
+        "author": str(book.get("author") or "").strip(),
+        "narrator": str(book.get("anchor") or book.get("narrator") or "").strip(),
+        "cover": str(book.get("thumb_url") or book.get("cover") or "").strip(),
+        "desc": str(book.get("abstract") or book.get("description") or book.get("desc") or "").strip(),
+        "tags": tags,
+        "category": str(book.get("category") or book.get("category_name") or book.get("categoryName") or "").strip(),
+        "finished": _fanqie_finished_status(book),
+        "chapter_count": chapter_count,
+        "word_count": book.get("word_count") or "",
+        "release_date": extract_bytedance_snowflake_year(book.get("book_id") or book.get("id") or ""),
+    }
+
+
+def _fanqie_search_books(keyword: str, page: int = 1, limit: int = 12) -> list:
+    keyword = str(keyword or "").strip()
+    if not keyword:
+        return []
+    try:
+        limit = max(1, int(limit or 12))
+        page = max(1, int(page or 1))
+        params = dict(_FANQIE_SEARCH_PARAMS)
+        params["_rticket"] = str(int(time.time() * 1000))
+        headers = {
+            "Content-Type": "application/json; charset=utf-8",
+            "User-Agent": _FANQIE_APP_UA,
+        }
         session = get_safe_session()
-        resp = session.post(url, params=params, headers=headers, json={"query": str(book_id).strip(), "limit": 30, "offset": 0}, timeout=12, verify=False)
-        if resp.status_code != 200: return {}
-        search_data = (resp.json().get("data") or {}).get("search_data")
-        if not search_data: return {}
-        items = search_data if isinstance(search_data, list) else (list(search_data.values()) if isinstance(search_data, dict) else [])
-        want_id = str(book_id).strip()
-        for book_item in items:
-            books = book_item.get("books") if isinstance(book_item, dict) else []
-            for book in books:
-                if str(book.get("book_id", "")).strip() != want_id: continue
-                category = (book.get("category") or book.get("category_name") or "").strip()
-                finished = ""
-                if book.get("creation_status") is not None: finished = "完结" if str(book.get("creation_status")) == "0" else "连载"
-                elif book.get("serial_status"): finished = "完结" if "完" in str(book.get("serial_status")) else "连载"
-                tags = []
-                tags_raw = book.get("tags") or book.get("tag_list") or book.get("labels") or []
-                if isinstance(tags_raw, list):
-                    for t in tags_raw:
-                        tag = (t.get("name") or t.get("tag_name") or str(t)).strip() if isinstance(t, dict) else str(t).strip()
-                        if tag and tag not in tags: tags.append(tag)
-                elif isinstance(tags_raw, str) and tags_raw: tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
-                return {"title": (book.get("book_name") or "").strip(), "author": (book.get("author") or "").strip(), "cover": book.get("thumb_url") or book.get("cover") or "", "desc": (book.get("abstract") or "").strip(), "category": category, "finished": finished, "tags": tags}
+        response = session.post(
+            _FANQIE_SEARCH_URL,
+            params=params,
+            headers=headers,
+            json={"query": keyword, "limit": limit, "offset": (page - 1) * limit},
+            timeout=12,
+            verify=False,
+        )
+        if response.status_code != 200:
+            return []
+        payload = response.json()
+        data = payload.get("data") or {}
+        search_data = data.get("search_data") or data.get("searchData") or data.get("books") or []
+        if isinstance(search_data, dict):
+            search_data = search_data.get("books") or list(search_data.values())
+        results = []
+        seen = set()
+
+        def add_book(book):
+            if not isinstance(book, dict):
+                return
+            item = _fanqie_parse_search_book(book)
+            if not item["id"] or not item["title"] or item["id"] in seen:
+                return
+            seen.add(item["id"])
+            results.append(item)
+
+        for group in search_data:
+            if isinstance(group, dict):
+                if isinstance(group.get("books"), list):
+                    for book in group["books"]:
+                        add_book(book)
+                elif group.get("book_id") or group.get("id"):
+                    add_book(group)
+            elif isinstance(group, list):
+                for book in group:
+                    add_book(book)
+        return results[:limit]
+    except Exception:
+        return []
+
+
+def _fanqie_search_by_id(book_id: str) -> dict:
+    want_id = str(book_id or "").strip()
+    if not want_id:
         return {}
-    except Exception: return {}
+    for item in _fanqie_search_books(want_id, page=1, limit=30):
+        if item["id"] != want_id:
+            continue
+        return {
+            "title": item["title"],
+            "author": item["author"],
+            "cover": item["cover"],
+            "desc": item["desc"],
+            "category": item["category"],
+            "finished": item["finished"],
+            "tags": item["tags"],
+            "announcer": item["narrator"],
+            "chapter_count": item["chapter_count"],
+            "releaseDate": item["release_date"],
+        }
+    return {}
 
 def _fanqie_plugin_detail(book_id: str) -> dict:
     session = get_safe_session()
@@ -422,7 +537,7 @@ def fanqie_api(album_id: str) -> dict:
         share_info = _fanqie_get_share_info(album_id)
 
         session = get_safe_session()
-        title, author, cover, desc, announcer, category, finished, tags, chapter_count = "", "", "", "", "", "", "", [], 0
+        title, author, cover, desc, announcer, category, finished, tags, chapter_count, release_date = "", "", "", "", "", "", "", [], 0, ""
         detail_urls = [
             ("https://fanqienovel.com/api/reader/book/detail", {"bookId": album_id}),
             ("https://fanqienovel.com/api/book/detail", {"book_id": album_id}),
@@ -478,9 +593,12 @@ def fanqie_api(album_id: str) -> dict:
             if hit:
                 title, author, cover, desc = hit.get("title") or title, hit.get("author") or author, hit.get("cover") or cover, hit.get("desc") or desc
                 category, finished, tags = hit.get("category") or category, hit.get("finished") or finished, hit.get("tags", []) or tags
+                announcer = hit.get("announcer") or announcer
+                chapter_count = hit.get("chapter_count") or chapter_count
+                release_date = hit.get("releaseDate") or ""
         if not title: title = f"书籍ID_{album_id}"
         if chapter_count and not desc: desc = f"番茄畅听有声书，共{chapter_count}集。"
-        return {"name": title, "title": title, "album": title, "bestCover": cover, "cover": cover, "pic": cover, "author": author, "announcer": announcer, "artist": announcer, "desc": desc, "info": desc, "releaseDate": "", "category": category, "finished": finished, "tags": tags}
+        return {"name": title, "title": title, "album": title, "bestCover": cover, "cover": cover, "pic": cover, "author": author, "announcer": announcer, "artist": announcer, "desc": desc, "info": desc, "releaseDate": release_date, "category": category, "finished": finished, "tags": tags, "chapter_count": chapter_count}
     except Exception as e: raise Exception(f"番茄畅听API异常：{str(e)}")
 
 def _qidian_getshare(book_id: str, cookie_str: str | None = None) -> dict | None:
@@ -608,11 +726,22 @@ def search_platform_metadata(platform: str, keyword: str, page: int = 1, limit: 
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json, text/plain, */*"}
     results = []
 
-    def add(item_id, title, author="", cover="", intro="", tags=None):
+    def add(item_id, title, author="", cover="", intro="", tags=None, narrator="", chapter_count=0, finished="", category=""):
         item_id, title = str(item_id or "").strip(), str(title or "").strip()
         if not item_id or not title or any(item["id"] == item_id for item in results):
             return
-        results.append({"id": item_id, "title": title, "author": str(author or "").strip(), "cover": str(cover or "").strip(), "desc": str(intro or "").strip(), "tags": tags or []})
+        results.append({
+            "id": item_id,
+            "title": title,
+            "author": str(author or "").strip(),
+            "cover": str(cover or "").strip(),
+            "desc": str(intro or "").strip(),
+            "tags": tags or [],
+            "narrator": str(narrator or "").strip(),
+            "chapter_count": chapter_count or 0,
+            "finished": str(finished or "").strip(),
+            "category": str(category or "").strip(),
+        })
 
     if platform == "喜马拉雅":
         url = "https://www.ximalaya.com/revision/search"
@@ -622,12 +751,19 @@ def search_platform_metadata(platform: str, keyword: str, page: int = 1, limit: 
         for item in docs:
             add(item.get("id"), item.get("title"), item.get("nickname") or item.get("anchorName"), item.get("cover_path"), item.get("intro"), [x.strip() for x in str(item.get("tags") or "").split(",") if x.strip()])
     elif platform == "番茄畅听":
-        url = "https://api5-sinfonlinec.novelfm.com/novelfm/bookmall/search/page/v1/"
-        params = {"device_platform": "android", "os": "android", "aid": "3040", "app_name": "novel_fm", "version_code": "608", "_rticket": int(time.time() * 1000)}
-        data = session.post(url, params=params, json={"query": keyword, "limit": limit, "offset": (page - 1) * limit}, headers=headers, timeout=20).json()
-        for group in ((data.get("data") or {}).get("search_data") or []):
-            for item in (group.get("books") or []):
-                add(item.get("book_id"), item.get("book_name"), item.get("author"), item.get("thumb_url"), item.get("abstract"), str(item.get("tags") or "").split(","))
+        for item in _fanqie_search_books(keyword, page=page, limit=limit):
+            add(
+                item["id"],
+                item["title"],
+                item["author"],
+                item["cover"],
+                item["desc"],
+                item["tags"],
+                narrator=item["narrator"],
+                chapter_count=item["chapter_count"],
+                finished=item["finished"],
+                category=item["category"],
+            )
     elif platform == "起点听书":
         url = "https://qdcg.qidian.com/api/search/list"
         data = session.get(url, params={"key": keyword, "pageIndex": page, "pageSize": limit, "site": 3, "model": 1}, headers={**headers, "Platform": "10", "AppId": "50", "AreaId": "501000"}, timeout=20).json()
