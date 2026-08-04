@@ -3886,6 +3886,50 @@ INDEX_HTML = r"""<!doctype html>
     #tagPool .album-tag-chip > button { color: rgba(255,255,255,.76); }
     #tagPool .album-tag-chip > button:hover { color: #fff; }
 
+    /* ── Modern UI polish ─────────────────────────── */
+    .ui-icon {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .section .section-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      color: var(--primary-light) !important;
+      background: color-mix(in srgb, var(--primary) 12%, transparent) !important;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 14%, transparent);
+    }
+    .section .section-icon .ui-icon {
+      width: 17px;
+      height: 17px;
+      flex-basis: 17px;
+    }
+    .section-title {
+      font-size: 16px;
+      color: var(--text);
+    }
+    .section {
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 88%, transparent), 0 14px 34px rgba(0,0,0,.08);
+    }
+    .section:hover {
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 88%, transparent), 0 18px 40px rgba(0,0,0,.12);
+    }
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    .custom-select-trigger:focus-visible,
+    .chips:focus-within {
+      outline: none;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+    }
+
     @media (max-width: 1500px) and (min-width: 1181px) {
       .app { grid-template-columns: minmax(620px, 1.03fr) minmax(560px, .97fr); }
       .brand-line h1 { font-size: 24px; }
@@ -4396,12 +4440,12 @@ INDEX_HTML = r"""<!doctype html>
     function setButtonBusy(button, busy, text) {
       if (!button) return;
       if (busy) {
-        button.dataset.oldText = button.textContent;
+        button.dataset.oldHtml = button.innerHTML;
         button.disabled = true;
-        button.textContent = text || '处理中...';
+        button.innerHTML = text || '处理中...';
       } else {
         button.disabled = false;
-        if (button.dataset.oldText) button.textContent = button.dataset.oldText;
+        if (button.dataset.oldHtml) button.innerHTML = button.dataset.oldHtml;
       }
     }
 
@@ -4456,6 +4500,65 @@ INDEX_HTML = r"""<!doctype html>
           updateToggle();
         });
       });
+    }
+
+    const _UI_ICONS = {
+      source: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>',
+      metadata: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+      archive: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>',
+      visual: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
+      queue: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+      log: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8M16 17H8"/></svg>',
+      failed: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/></svg>',
+      overview: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
+      download: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>',
+      search: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
+      user: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+      plus: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>',
+      play: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 4 14 8-14 8Z"/></svg>',
+      stop: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>',
+      trash: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg>',
+      check: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+      x: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    };
+
+    function setButtonContent(button, iconName, label) {
+      if (!button) return;
+      button.innerHTML = `${_UI_ICONS[iconName] || ''}<span>${label}</span>`;
+    }
+
+    function iconifyTextButton(button, iconName) {
+      if (!button) return;
+      const label = button.textContent.replace(/^[^\u4e00-\u9fa5A-Za-z0-9]+\s*/, '').trim();
+      setButtonContent(button, iconName, label || button.title);
+    }
+
+    function installUiIcons() {
+      const sectionNames = ['source', 'metadata', 'archive', 'visual'];
+      document.querySelectorAll('.section-icon').forEach((el, index) => {
+        if (_UI_ICONS[sectionNames[index]]) el.innerHTML = _UI_ICONS[sectionNames[index]];
+      });
+      const tabIcons = { queue: 'queue', log: 'log', failed: 'failed', overview: 'overview' };
+      document.querySelectorAll('.tab').forEach(btn => {
+        if (tabIcons[btn.dataset.tab]) iconifyTextButton(btn, tabIcons[btn.dataset.tab]);
+      });
+      const buttonIcons = {
+        fetchBtn: 'download',
+        searchTitleBtn: 'search',
+        fetchAuthorBtn: 'user',
+        openSeriesBtn: 'plus',
+        addQueueBtn: 'plus',
+        startQueueBtn: 'play',
+        stopBtn: 'stop',
+        clearBtn: 'trash',
+        clearLogBtn: 'trash',
+        editQueueBtn: 'check',
+        removeQueueBtn: 'x',
+        clearQueueBtn: 'trash',
+      };
+      for (const [id, icon] of Object.entries(buttonIcons)) {
+        iconifyTextButton(document.getElementById(id), icon);
+      }
     }
 
     async function api(path, options = {}) {
@@ -5222,7 +5325,7 @@ INDEX_HTML = r"""<!doctype html>
 
     async function clearAll() {
       editingQueueId = '';
-      document.getElementById('addQueueBtn').textContent = '＋ 加入队列';
+      setButtonContent(document.getElementById('addQueueBtn'), 'plus', '加入队列');
       form.reset();
       authors = [];
       anchors = [];
@@ -5806,6 +5909,7 @@ INDEX_HTML = r"""<!doctype html>
     }
 
     initMobileSections();
+    installUiIcons();
     document.querySelectorAll('.tab').forEach(btn => btn.onclick = () => {
       document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
       btn.classList.add('active');

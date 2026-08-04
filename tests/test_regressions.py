@@ -221,6 +221,11 @@ class RegressionTests(unittest.TestCase):
         self.assertNotIn('id="previewCoverBtn"', INDEX_HTML)
         self.assertIn(".cover-box:hover .cover-change-button", INDEX_HTML)
 
+    def test_ui_icons_use_consistent_svg_system(self):
+        self.assertIn("function installUiIcons()", INDEX_HTML)
+        self.assertIn("const _UI_ICONS =", INDEX_HTML)
+        self.assertIn(".ui-icon", INDEX_HTML)
+
     def test_author_and_anchor_pools_share_one_row(self):
         self.assertIn('class="people-row"', INDEX_HTML)
         self.assertIn('id="authorPool"', INDEX_HTML)
