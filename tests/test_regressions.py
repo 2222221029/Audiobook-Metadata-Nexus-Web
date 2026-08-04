@@ -213,6 +213,8 @@ class RegressionTests(unittest.TestCase):
         self.assertIn('id="authorPool"', INDEX_HTML)
         self.assertIn('id="anchorPool"', INDEX_HTML)
         self.assertIn(".people-row .entity-row", INDEX_HTML)
+        self.assertIn("placeholder: '请输入作者，回车添加'", INDEX_HTML)
+        self.assertIn("placeholder: '请输入演播者，回车添加'", INDEX_HTML)
 
     def test_ypshuo_author_candidates_require_exact_title_and_are_distinct(self):
         candidates = [

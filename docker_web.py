@@ -4808,7 +4808,7 @@ INDEX_HTML = r"""<!doctype html>
       renderPeople(authorPool, authors, index => {
         authors.splice(index, 1);
         renderAuthors();
-      }, { editable: true, target: authors, renderFn: renderAuthors, placeholder: '' });
+      }, { editable: true, target: authors, renderFn: renderAuthors, placeholder: '请输入作者，回车添加' });
       if (authors.length) authorPool.classList.remove('field-error');
     }
 
@@ -4816,7 +4816,7 @@ INDEX_HTML = r"""<!doctype html>
       renderPeople(anchorPool, anchors, index => {
         anchors.splice(index, 1);
         renderAnchors();
-      }, { editable: true, target: anchors, renderFn: renderAnchors, placeholder: '' });
+      }, { editable: true, target: anchors, renderFn: renderAnchors, placeholder: '请输入演播者，回车添加' });
       if (anchors.length) anchorPool.classList.remove('field-error');
     }
 
