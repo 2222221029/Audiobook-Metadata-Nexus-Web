@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from api_clients import _fanqie_parse_search_book, _fanqie_search_books, _matching_ypshuo_authors, fanqie_cover_url, fanqie_release_year, search_platform_metadata
+from api_clients import _fanqie_parse_search_book, _fanqie_search_books, _matching_ypshuo_authors, fanqie_api, fanqie_cover_url, fanqie_release_year, search_platform_metadata
 from metadata_helpers import build_output_folder_name
 from processor import load_operation_snapshot, resolve_output_folder_path, restore_operation_snapshot, save_operation_snapshot
 from docker_web import (
@@ -409,6 +409,38 @@ class RegressionTests(unittest.TestCase):
         }
         self.assertEqual(fanqie_cover_url(data), "https://hd.example.com/cover.jpg")
         self.assertEqual(fanqie_release_year(data), "2022")
+
+    @patch("api_clients._fanqie_search_by_id")
+    @patch("api_clients._fanqie_get_share_info")
+    @patch("api_clients._fanqie_plugin_detail")
+    def test_fanqie_id_only_merges_detail_share_and_search(self, detail_mock, share_mock, search_mock):
+        detail_mock.return_value = {
+            "title": "\u8be6\u60c5\u6807\u9898",
+            "cover": "https://detail.example.com/cover.jpg",
+            "releaseDate": "2019",
+        }
+        share_mock.return_value = {
+            "name": "\u5206\u4eab\u6807\u9898",
+            "desc": "\u5206\u4eab\u7b80\u4ecb",
+            "tags": ["\u5206\u4eab\u6807\u7b7e"],
+        }
+        search_mock.return_value = {
+            "title": "\u641c\u7d22\u6807\u9898",
+            "desc": "\u641c\u7d22\u7b80\u4ecb",
+            "announcer": "\u641c\u7d22\u6f14\u64ad",
+            "chapter_count": 12,
+            "releaseDate": "2022",
+            "tags": ["\u641c\u7d22\u6807\u7b7e"],
+        }
+        raw = fanqie_api("123")
+        self.assertEqual(raw["title"], "\u8be6\u60c5\u6807\u9898")
+        self.assertEqual(raw["cover"], "https://detail.example.com/cover.jpg")
+        self.assertEqual(raw["desc"], "\u5206\u4eab\u7b80\u4ecb")
+        self.assertEqual(raw["announcer"], "\u641c\u7d22\u6f14\u64ad")
+        self.assertEqual(raw["chapter_count"], 12)
+        self.assertEqual(raw["releaseDate"], "2019")
+        self.assertIn("\u5206\u4eab\u6807\u7b7e", raw["tags"])
+        self.assertIn("\u641c\u7d22\u6807\u7b7e", raw["tags"])
 
     def test_fanqie_search_request_uses_plugin_params(self):
         with patch("api_clients.get_safe_session") as get_session:

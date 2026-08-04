@@ -405,6 +405,38 @@ def fanqie_release_year(data):
     return ""
 
 
+def _merge_fanqie_metadata_entries(base, extra):
+    base = dict(base or {})
+    extra = dict(extra or {})
+    for key in (
+        "name",
+        "title",
+        "album",
+        "bestCover",
+        "cover",
+        "pic",
+        "author",
+        "announcer",
+        "artist",
+        "desc",
+        "info",
+        "releaseDate",
+        "category",
+        "finished",
+        "chapter_count",
+    ):
+        if not base.get(key) and extra.get(key):
+            base[key] = extra[key]
+    tags = list(base.get("tags") or [])
+    for tag in extra.get("tags") or []:
+        tag = str(tag or "").strip()
+        if tag and tag not in tags:
+            tags.append(tag)
+    if tags:
+        base["tags"] = tags
+    return base
+
+
 def _fanqie_finished_status(book):
     creation_status = book.get("creation_status")
     if creation_status is not None:
@@ -587,7 +619,14 @@ def _fanqie_plugin_detail(book_id: str) -> dict:
 def fanqie_api(album_id: str) -> dict:
     try:
         try:
-            return _fanqie_plugin_detail(str(album_id).strip())
+            album_id = str(album_id).strip()
+            detail = _fanqie_plugin_detail(album_id)
+            if detail.get("title"):
+                result = _merge_fanqie_metadata_entries(detail, _fanqie_get_share_info(album_id))
+                result = _merge_fanqie_metadata_entries(result, _fanqie_search_by_id(album_id))
+                if not result.get("title"):
+                    result["title"] = result["name"] = result["album"] = f"书籍ID_{album_id}"
+                return result
         except Exception:
             pass
         share_info = _fanqie_get_share_info(album_id)
@@ -646,14 +685,20 @@ def fanqie_api(album_id: str) -> dict:
                 finished = share_info.get("finished") or finished
                 tags = share_info.get("tags") or tags
                 release_date = share_info.get("releaseDate") or release_date
-        if not title:
-            hit = _fanqie_search_by_id(album_id)
-            if hit:
-                title, author, cover, desc = hit.get("title") or title, hit.get("author") or author, hit.get("cover") or cover, hit.get("desc") or desc
-                category, finished, tags = hit.get("category") or category, hit.get("finished") or finished, hit.get("tags", []) or tags
-                announcer = hit.get("announcer") or announcer
-                chapter_count = hit.get("chapter_count") or chapter_count
-                release_date = hit.get("releaseDate") or ""
+        hit = _fanqie_search_by_id(album_id)
+        if hit:
+            title = hit.get("title") or title
+            author = hit.get("author") or author
+            cover = hit.get("cover") or cover
+            desc = hit.get("desc") or desc
+            category = hit.get("category") or category
+            finished = hit.get("finished") or finished
+            announcer = hit.get("announcer") or announcer
+            chapter_count = hit.get("chapter_count") or chapter_count
+            release_date = hit.get("releaseDate") or release_date
+            for tag in hit.get("tags", []) or []:
+                if tag and tag not in tags:
+                    tags.append(tag)
         if not title: title = f"书籍ID_{album_id}"
         if chapter_count and not desc: desc = f"番茄畅听有声书，共{chapter_count}集。"
         return {"name": title, "title": title, "album": title, "bestCover": cover, "cover": cover, "pic": cover, "author": author, "announcer": announcer, "artist": announcer, "desc": desc, "info": desc, "releaseDate": release_date, "category": category, "finished": finished, "tags": tags, "chapter_count": chapter_count}
