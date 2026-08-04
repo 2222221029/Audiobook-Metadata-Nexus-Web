@@ -14,6 +14,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from api_clients import (
     fanqie_api,
+    fanqie_cover_url,
     lanren_api,
     netease_ting_api,
     qidian_api,
@@ -750,15 +751,7 @@ def _fanqie_tags(value):
 
 
 def _fanqie_cover(data):
-    for key in ("audio_thumb_url_hd", "audio_thumb_uri", "audio_thumb_url", "audio_thumb_uri_webp", "thumb_url", "horiz_thumb_url", "cover", "cover_url", "image_url"):
-        value = data.get(key)
-        if isinstance(value, dict):
-            value = value.get("url") or value.get("uri") or value.get("url_list", [""])[0]
-        if isinstance(value, list):
-            value = value[0] if value else ""
-        if value:
-            return str(value).strip()
-    return ""
+    return fanqie_cover_url(data)
 
 
 def _fanqie_release_year(data):

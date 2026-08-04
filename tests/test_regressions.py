@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from api_clients import _fanqie_parse_search_book, _fanqie_search_books, _matching_ypshuo_authors, search_platform_metadata
+from api_clients import _fanqie_parse_search_book, _fanqie_search_books, _matching_ypshuo_authors, fanqie_cover_url, fanqie_release_year, search_platform_metadata
 from metadata_helpers import build_output_folder_name
 from processor import load_operation_snapshot, resolve_output_folder_path, restore_operation_snapshot, save_operation_snapshot
 from docker_web import (
@@ -382,11 +382,13 @@ class RegressionTests(unittest.TestCase):
             "book_name": "\u6d4b\u8bd5\u4e66\u540d",
             "author": "\u4f5c\u8005",
             "anchor": "\u6f14\u64ad",
-            "thumb_url": "https://example.com/cover.jpg",
+            "audio_thumb_url_hd": "https://hd.example.com/cover.jpg",
+            "thumb_url": "https://thumb.example.com/cover.jpg",
             "abstract": "\u7b80\u4ecb",
             "tags": [{"tag_name": "\u7384\u5e7b"}, "\u90fd\u5e02"],
             "tag_name": "\u60ac\u7591",
             "creation_status": 0,
+            "create_time": "2022-05-06",
             "chapter_number": 88,
             "category": "\u6709\u58f0\u5c0f\u8bf4",
         })
@@ -396,6 +398,17 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(item["tags"], ["\u7384\u5e7b", "\u90fd\u5e02", "\u60ac\u7591"])
         self.assertEqual(item["finished"], "\u5b8c\u7ed3")
         self.assertEqual(item["chapter_count"], 88)
+        self.assertEqual(item["cover"], "https://hd.example.com/cover.jpg")
+        self.assertEqual(item["release_date"], "2022")
+
+    def test_fanqie_link_metadata_helpers(self):
+        data = {
+            "audio_thumb_url_hd": "http://hd.example.com/cover.jpg",
+            "thumb_url": "http://thumb.example.com/cover.jpg",
+            "create_time": 1641330000000,
+        }
+        self.assertEqual(fanqie_cover_url(data), "https://hd.example.com/cover.jpg")
+        self.assertEqual(fanqie_release_year(data), "2022")
 
     def test_fanqie_search_request_uses_plugin_params(self):
         with patch("api_clients.get_safe_session") as get_session:
