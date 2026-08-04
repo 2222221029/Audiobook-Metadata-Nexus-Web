@@ -2335,27 +2335,202 @@ INDEX_HTML = r"""<!doctype html>
     }
     .cover-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
     .cover-meta { margin-top: 5px; color: var(--text-3); font-size: 11px; text-align: center; }
-    .search-results { position: fixed; z-index: 1200; inset: 50% auto auto 50%; transform: translate(-50%, -50%); display: grid; gap: 9px; width: min(760px, calc(100vw - 32px)); max-height: min(680px, calc(100vh - 56px)); overflow: auto; padding: 0 18px 18px; background: var(--surface); border: 1px solid var(--border-med); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
-    .search-dialog-head { position: sticky; top: 0; z-index: 1; display:flex; align-items:center; justify-content:space-between; margin: 0 -18px 8px; padding: 17px 18px 13px; background: var(--surface); border-bottom: 1px solid var(--border); }
-    .search-dialog-head strong { color: var(--text); font-size: 17px; }
-    .search-dialog-close { width: 32px; height: 32px; border: 0; border-radius: 50%; color: var(--text-2); background: var(--surface-2); cursor: pointer; font-size: 20px; line-height: 1; }
-    .search-dialog-close:hover { color: var(--text); background: var(--primary-bg); }
-    .search-results[hidden] { display: none; }
-    .search-results-backdrop { position: fixed; z-index: 1199; inset: 0; background: rgba(0,0,0,.62); backdrop-filter: blur(3px); }
-    .search-result { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 10px 12px; text-align: left; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: border-color .18s, transform .18s, background .18s; }
-    .search-result:hover { border-color: var(--primary); background: var(--primary-bg); }
-    .search-result:hover { transform: translateY(-1px); }
-    .search-result img { width: 58px; height: 58px; object-fit: cover; border-radius: 8px; background: var(--surface-3); }
-    .search-result-title { display:block; overflow:hidden; font-weight: 700; line-height:1.45; white-space:normal; overflow-wrap:anywhere; }
-    .search-result-meta { margin-top: 3px; color: var(--text-3); font-size: 12px; }
-    .author-search-result { grid-template-columns: 44px minmax(0, 1fr) auto; }
-    .author-result-avatar {
-      width: 44px; height: 44px; display: grid; place-items: center;
-      border-radius: 13px; color: #fff; font-size: 17px; font-weight: 800;
-      background: linear-gradient(135deg, var(--primary), #8b5cf6);
-      box-shadow: 0 6px 16px var(--primary-glow);
+    .search-results {
+      position: fixed;
+      z-index: 1200;
+      inset: 50% auto auto 50%;
+      transform: translate(-50%, -50%);
+      display: grid;
+      gap: 10px;
+      width: min(840px, calc(100vw - 32px));
+      max-height: min(760px, calc(100vh - 56px));
+      overflow: auto;
+      padding: 0 18px 18px;
+      background: color-mix(in srgb, var(--surface) 96%, transparent);
+      border: 1px solid var(--border-med);
+      border-radius: 20px;
+      box-shadow: 0 32px 80px rgba(0,0,0,.36), inset 0 1px 0 color-mix(in srgb, var(--surface) 88%, transparent);
+      backdrop-filter: blur(22px);
     }
-    .search-pagination { display:flex; justify-content:space-between; gap:8px; margin-top:10px; }
+    .search-dialog-head {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 -18px 10px;
+      padding: 18px 22px 14px;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 90%, transparent));
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+    }
+    .search-dialog-head strong { color: var(--text); font-size: 17px; }
+    .search-count {
+      color: var(--primary-light);
+      background: var(--primary-bg);
+      border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+      padding: 3px 9px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .search-dialog-close {
+      width: 32px;
+      height: 32px;
+      min-height: 32px;
+      border: 0;
+      border-radius: 50%;
+      color: var(--text-2);
+      background: var(--surface-2);
+      cursor: pointer;
+      transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
+    }
+    .search-dialog-close:hover {
+      color: var(--text);
+      background: var(--primary-bg);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+    }
+    .search-dialog-close .ui-icon { width: 16px; height: 16px; }
+    .search-results[hidden] { display: none; }
+    .search-results-backdrop {
+      position: fixed;
+      z-index: 1199;
+      inset: 0;
+      background: rgba(0,0,0,.58);
+      backdrop-filter: blur(6px);
+    }
+    .search-result {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      width: 100%;
+      padding: 14px;
+      text-align: left;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--surface-2), var(--surface));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 88%, transparent);
+      transition: border-color .18s, transform .18s, background .18s, box-shadow .18s;
+    }
+    .search-result:hover {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, var(--primary-bg), var(--surface-2));
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 16%, transparent);
+    }
+    .search-result img {
+      width: 72px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 12px;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      box-shadow: 0 6px 16px rgba(0,0,0,.14);
+    }
+    .search-result-title {
+      display: block;
+      overflow: hidden;
+      font-weight: 700;
+      line-height: 1.45;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .search-result-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px 10px;
+      margin-top: 4px;
+      color: var(--text-3);
+      font-size: 12px;
+    }
+    .search-result-desc {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-top: 7px;
+      color: var(--text-2);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .search-result-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+    .search-result-tag {
+      padding: 2px 7px;
+      border-radius: 99px;
+      background: var(--surface-3);
+      color: var(--text-2);
+      border: 1px solid var(--border);
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .search-result-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 12px;
+      border-radius: 99px;
+      background: var(--primary-bg);
+      color: var(--primary-light);
+      border: 1px solid color-mix(in srgb, var(--primary) 26%, transparent);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .search-result-action .ui-icon { width: 14px; height: 14px; }
+    .author-search-result { grid-template-columns: 52px minmax(0, 1fr) auto; }
+    .author-result-avatar {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 800;
+      box-shadow: 0 8px 20px rgba(0,0,0,.16);
+    }
+    .search-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 44px 20px;
+      color: var(--text-3);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .search-empty .ui-icon { width: 22px; height: 22px; opacity: .75; }
+    .search-pagination {
+      position: sticky;
+      bottom: -18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin: 2px -18px -18px;
+      padding: 12px 18px;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      border-top: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+    }
+    .search-pagination button {
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 9px;
+      font-size: 12px;
+    }
     .source-controls .btn-primary { box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 20%, transparent); }
     .source-controls .quiet-button { background: color-mix(in srgb, var(--surface-2) 82%, var(--primary) 18%); border-color: color-mix(in srgb, var(--primary) 20%, var(--border)); }
     .source-controls .quiet-button:hover { background: var(--primary-bg); border-color: color-mix(in srgb, var(--primary) 48%, var(--border)); }
@@ -4571,6 +4746,9 @@ INDEX_HTML = r"""<!doctype html>
       up: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>',
       chevronUp: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>',
       chevronDown: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+      chevronLeft: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
+      chevronRight: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
+      arrowRight: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
       save: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10.2z"/><path d="M17 21v-7H7v7M7 3v4h8"/></svg>',
     };
 
@@ -5196,16 +5374,19 @@ INDEX_HTML = r"""<!doctype html>
       box.replaceChildren();
       const head = document.createElement('div');
       head.className = 'search-dialog-head';
-      head.innerHTML = '<strong>选择原著作者</strong><button type="button" class="search-dialog-close" aria-label="关闭">×</button>';
+      head.innerHTML = `<strong>选择原著作者</strong><span class="search-count">${results.length} 位候选</span><button type="button" class="search-dialog-close" aria-label="关闭">${_UI_ICONS.x}</button>`;
       head.querySelector('button').onclick = closeAuthorSearchResults;
       box.appendChild(head);
-      results.forEach(item => {
+      results.forEach((item, index) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'search-result author-search-result';
         const avatar = document.createElement('span');
         avatar.className = 'author-result-avatar';
         avatar.textContent = String(item.author || '?').trim().slice(0, 1);
+        const hue = (190 + index * 47) % 360;
+        avatar.style.background = `linear-gradient(135deg, hsl(${hue} 74% 52%), hsl(${(hue + 26) % 360} 70% 36%))`;
+        avatar.style.boxShadow = `0 8px 20px hsl(${hue} 72% 42% / .28)`;
         const body = document.createElement('span');
         const authorName = document.createElement('span');
         authorName.className = 'search-result-title';
@@ -5216,7 +5397,8 @@ INDEX_HTML = r"""<!doctype html>
         meta.textContent = [item.title || title, sourceName].filter(Boolean).join(' · ');
         body.append(authorName, meta);
         const pick = document.createElement('span');
-        pick.textContent = '填入';
+        pick.className = 'search-result-action';
+        pick.innerHTML = `${_UI_ICONS.arrowRight}<span>填入</span>`;
         button.append(avatar, body, pick);
         button.onclick = () => applyAuthorCandidate(item);
         box.appendChild(button);
@@ -5302,10 +5484,18 @@ INDEX_HTML = r"""<!doctype html>
       box.replaceChildren();
       const head = document.createElement('div');
       head.className = 'search-dialog-head';
-      head.innerHTML = '<strong>选择搜索结果</strong><button type="button" class="search-dialog-close" aria-label="关闭">×</button>';
+      head.innerHTML = `<strong>选择搜索结果</strong><span class="search-count">${results.length} 条结果</span><button type="button" class="search-dialog-close" aria-label="关闭">${_UI_ICONS.x}</button>`;
       head.querySelector('button').onclick = closeTitleSearchResults;
       box.appendChild(head);
-      if (!results.length) { const empty = document.createElement('div'); empty.className = 'search-result-meta'; empty.textContent = '没有找到匹配专辑'; box.appendChild(empty); box.hidden = false; backdrop.hidden = false; return; }
+      if (!results.length) {
+        const empty = document.createElement('div');
+        empty.className = 'search-empty';
+        empty.innerHTML = `${_UI_ICONS.search}<span>没有找到匹配专辑</span>`;
+        box.appendChild(empty);
+        box.hidden = false;
+        backdrop.hidden = false;
+        return;
+      }
       results.forEach(item => {
         const button = document.createElement('button');
         button.type = 'button'; button.className = 'search-result';
@@ -5317,10 +5507,36 @@ INDEX_HTML = r"""<!doctype html>
         cover.alt = '';
         cover.onerror = () => { cover.removeAttribute('src'); cover.alt = '暂无封面'; };
         const body = document.createElement('span');
-        body.innerHTML = `<span class="search-result-title"></span><span class="search-result-meta"></span>`;
-        body.querySelector('.search-result-title').textContent = item.title || '未命名专辑';
-        body.querySelector('.search-result-meta').textContent = [item.author, item.id].filter(Boolean).join(' · ');
-        const pick = document.createElement('span'); pick.textContent = '选择';
+        const title = document.createElement('span');
+        title.className = 'search-result-title';
+        title.textContent = item.title || '未命名专辑';
+        const meta = document.createElement('span');
+        meta.className = 'search-result-meta';
+        const metaParts = [];
+        if (item.author) metaParts.push(item.author);
+        if (item.id) metaParts.push(`ID ${item.id}`);
+        meta.textContent = metaParts.join(' · ');
+        body.append(title, meta);
+        if (item.desc) {
+          const desc = document.createElement('span');
+          desc.className = 'search-result-desc';
+          desc.textContent = item.desc;
+          body.append(desc);
+        }
+        if (Array.isArray(item.tags) && item.tags.length) {
+          const tags = document.createElement('span');
+          tags.className = 'search-result-tags';
+          item.tags.slice(0, 3).forEach(tag => {
+            const chip = document.createElement('span');
+            chip.className = 'search-result-tag';
+            chip.textContent = tag;
+            tags.append(chip);
+          });
+          body.append(tags);
+        }
+        const pick = document.createElement('span');
+        pick.className = 'search-result-action';
+        pick.innerHTML = `${_UI_ICONS.arrowRight}<span>选择</span>`;
         button.append(cover, body, pick);
         button.onclick = async () => {
           form.api_id.value = item.id;
@@ -5331,7 +5547,7 @@ INDEX_HTML = r"""<!doctype html>
       });
       const pagination = document.createElement('div');
       pagination.className = 'search-pagination';
-      pagination.innerHTML = '<button type="button" class="quiet-button" id="searchPrevBtn">上一页</button><span class="search-result-meta" id="searchPageText"></span><button type="button" class="quiet-button" id="searchNextBtn">下一页</button>';
+      pagination.innerHTML = `<button type="button" class="quiet-button" id="searchPrevBtn">${_UI_ICONS.chevronLeft}<span>上一页</span></button><span class="search-result-meta" id="searchPageText"></span><button type="button" class="quiet-button" id="searchNextBtn"><span>下一页</span>${_UI_ICONS.chevronRight}</button>`;
       pagination.querySelector('#searchPrevBtn').disabled = titleSearchPage <= 1;
       pagination.querySelector('#searchNextBtn').disabled = !titleSearchHasNext;
       pagination.querySelector('#searchPageText').textContent = `第 ${titleSearchPage} 页`;

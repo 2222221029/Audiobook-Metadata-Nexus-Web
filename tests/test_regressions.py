@@ -109,6 +109,10 @@ class RegressionTests(unittest.TestCase):
         self.assertIn('id="authorSearchResults"', INDEX_HTML)
         self.assertIn("function fetchAuthorByTitle()", INDEX_HTML)
         self.assertIn("'/api/search-author'", INDEX_HTML)
+        self.assertIn(".search-result-desc", INDEX_HTML)
+        self.assertIn(".search-result-tags", INDEX_HTML)
+        self.assertIn(".search-result-action", INDEX_HTML)
+        self.assertIn('class="search-count"', INDEX_HTML)
 
     def test_source_controls_share_one_aligned_grid(self):
         self.assertIn('class="source-controls"', INDEX_HTML)
