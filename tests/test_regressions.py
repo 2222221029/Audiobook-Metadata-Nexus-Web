@@ -159,20 +159,24 @@ class RegressionTests(unittest.TestCase):
 
     def test_redesigned_console_has_a_complete_light_palette(self):
         for selector in (
-            'html[data-theme="light"] .global-topbar',
-            'html[data-theme="light"] .section',
-            'html[data-theme="light"] .queue-console,',
-            'html[data-theme="light"] .queue-console th',
-            'html[data-theme="light"] .right-commandbar',
-            'html[data-theme="light"] .log',
+            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) body',
+            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .global-topbar',
+            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .section',
+            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .queue-console,',
+            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .queue-console th',
+            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .right-commandbar',
+            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .log',
         ):
             self.assertIn(selector, INDEX_HTML)
         self.assertIn("--bg: #edf1f7", INDEX_HTML)
 
-    def test_settings_center_exposes_six_curated_themes(self):
+    def test_settings_center_exposes_nine_curated_themes(self):
         for theme, label in (
             ("dark", "曜石深色"),
             ("light", "云雾浅色"),
+            ("linen", "暖砂浅色"),
+            ("mint", "薄荷浅色"),
+            ("rose", "蔷薇浅色"),
             ("ocean", "深海蓝"),
             ("aurora", "极光紫"),
             ("jade", "松石青"),
@@ -180,9 +184,10 @@ class RegressionTests(unittest.TestCase):
         ):
             self.assertIn(f'data-theme-option="{theme}"', INDEX_HTML)
             self.assertIn(label, INDEX_HTML)
-        for theme in ("ocean", "aurora", "jade", "graphite"):
+        for theme in ("linen", "mint", "rose", "ocean", "aurora", "jade", "graphite"):
             self.assertIn(f'html[data-theme="{theme}"]', INDEX_HTML)
         self.assertIn("const _THEMES = Object.freeze", INDEX_HTML)
+        self.assertIn("const _LIGHT_THEMES = new Set(['light', 'linen', 'mint', 'rose'])", INDEX_HTML)
         self.assertIn("option.dataset.themeOption === theme", INDEX_HTML)
 
     def test_album_tag_pool_uses_distinct_colour_variables(self):
