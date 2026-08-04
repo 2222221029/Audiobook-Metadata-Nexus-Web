@@ -612,7 +612,7 @@ def _merge_fanqie_search_result(raw, search_result):
         ("releaseDate", "release_date"),
     )
     for target, source_key in field_map:
-        if not raw.get(target) and search_result.get(source_key):
+        if search_result.get(source_key):
             raw[target] = search_result[source_key]
     tags = list(raw.get("tags") or [])
     for tag in search_result.get("tags") or []:
@@ -647,7 +647,13 @@ def fetch_api_metadata(api_source, api_id, search_result=None):
     if api_source == "酷我听书":
         return normalize_metadata(kuwo_api(api_id), api_source)
     if api_source == "番茄畅听":
-        raw = _merge_fanqie_search_result(fanqie_api(api_id), search_result)
+        try:
+            raw = fanqie_api(api_id)
+        except Exception:
+            if not search_result or not search_result.get("title"):
+                raise
+            raw = {}
+        raw = _merge_fanqie_search_result(raw, search_result)
         return normalize_metadata(raw, api_source)
     if api_source == "起点听书":
         cookie = get_platform_cookies().get("qidian", "")
@@ -2363,10 +2369,12 @@ INDEX_HTML = r"""<!doctype html>
     /* ── Cover ──────────────────────────────────── */
     .cover-row { display: grid; grid-template-columns: 158px 1fr; gap: 14px; align-items: start; }
     .cover-box {
+      width: 100%;
       height: 158px; background: var(--surface-3); border: 1px solid var(--border);
       border-radius: var(--radius-sm); display: grid; place-items: center;
       color: var(--text-3); text-align: center; overflow: hidden; font-size: 12px;
       transition: background .25s ease, border-color .25s ease;
+      aspect-ratio: 1 / 1;
     }
     .cover-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
     .cover-meta { margin-top: 5px; color: var(--text-3); font-size: 11px; text-align: center; }

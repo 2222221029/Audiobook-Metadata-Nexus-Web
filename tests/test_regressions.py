@@ -254,6 +254,8 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("form.manual_cover_path.value = ''", INDEX_HTML)
         self.assertIn("img.removeAttribute('src')", INDEX_HTML)
         self.assertIn("height: 192px", INDEX_HTML)
+        self.assertIn("aspect-ratio: 1 / 1;", INDEX_HTML)
+        self.assertIn(".cover-box img { object-fit: cover; }", INDEX_HTML)
 
     def test_queue_has_checkboxes_and_platform_logos(self):
         self.assertIn('type="checkbox" class="queue-check"', INDEX_HTML)
@@ -437,7 +439,11 @@ class RegressionTests(unittest.TestCase):
 
     @patch("docker_web.fanqie_api")
     def test_fetch_fanqie_metadata_uses_selected_search_result(self, fanqie_mock):
-        fanqie_mock.return_value = {"title": "\u540e\u53f0\u6807\u9898"}
+        fanqie_mock.return_value = {
+            "title": "\u540e\u53f0\u6807\u9898",
+            "desc": "\u540e\u53f0\u7b80\u4ecb",
+            "cover": "https://backend.example/cover.jpg",
+        }
         meta = fetch_api_metadata("\u756a\u8304\u7545\u542c", "123", {
             "title": "\u641c\u7d22\u6807\u9898",
             "author": "\u641c\u7d22\u4f5c\u8005",
@@ -448,7 +454,9 @@ class RegressionTests(unittest.TestCase):
             "finished": "\u5b8c\u7ed3",
             "category": "\u6709\u58f0\u5c0f\u8bf4",
         })
-        self.assertEqual(meta["title"], "\u540e\u53f0\u6807\u9898")
+        self.assertEqual(meta["title"], "\u641c\u7d22\u6807\u9898")
+        self.assertEqual(meta["desc"], "\u641c\u7d22\u7b80\u4ecb")
+        self.assertEqual(meta["cover_url"], "https://example.com/cover.jpg")
         self.assertEqual(meta["author"], "\u641c\u7d22\u4f5c\u8005")
         self.assertEqual(meta["anchor"], "\u641c\u7d22\u6f14\u64ad")
         self.assertIn("\u6807\u7b7e", meta["tags"])
