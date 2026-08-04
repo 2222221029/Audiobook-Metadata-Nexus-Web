@@ -3842,6 +3842,15 @@ INDEX_HTML = r"""<!doctype html>
     :is(html[data-theme="ocean"], html[data-theme="aurora"], html[data-theme="jade"], html[data-theme="graphite"]) .log { border-color: var(--border); background: var(--log-bg); color: var(--log-text); }
     :is(html[data-theme="ocean"], html[data-theme="aurora"], html[data-theme="jade"], html[data-theme="graphite"]) .log-line.info { color: var(--primary-light); }
 
+    .chip.colored-chip {
+      background: linear-gradient(135deg, var(--chip-color-a), var(--chip-color-b)) !important;
+      border: 1px solid var(--chip-border);
+      color: #fff;
+      box-shadow: 0 3px 10px color-mix(in srgb, var(--chip-color-a) 24%, transparent);
+    }
+    .chip.colored-chip > button { color: rgba(255,255,255,.76); }
+    .chip.colored-chip > button:hover { color: #fff; }
+
     #tagPool .album-tag-chip {
       background: linear-gradient(135deg, var(--tag-color-a), var(--tag-color-b)) !important;
       border: 1px solid var(--tag-border);
@@ -4741,9 +4750,11 @@ INDEX_HTML = r"""<!doctype html>
       }
       values.forEach((value, index) => {
         const chip = document.createElement('span');
-        chip.className = 'chip';
+        chip.className = 'chip colored-chip';
         const hue = (index * 53 + (pool === authorPool ? 210 : pool === anchorPool ? 168 : pool === teamPool ? 232 : 252)) % 360;
-        chip.style.background = `linear-gradient(135deg, hsl(${hue} 74% 48%), hsl(${(hue + 28) % 360} 70% 40%))`;
+        chip.style.setProperty('--chip-color-a', `hsl(${hue} 74% 48%)`);
+        chip.style.setProperty('--chip-color-b', `hsl(${(hue + 28) % 360} 70% 40%)`);
+        chip.style.setProperty('--chip-border', `hsl(${((hue + 10) % 360).toFixed(1)} 52% 58% / .55)`);
         chip.innerHTML = `<span>${value}</span>`;
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -5582,9 +5593,11 @@ INDEX_HTML = r"""<!doctype html>
       }
       blacklistPatterns.forEach((pattern, index) => {
         const chip = document.createElement('span');
-        chip.className = 'chip';
+        chip.className = 'chip colored-chip';
         const hue = (index * 43 + 334) % 360;
-        chip.style.background = `linear-gradient(135deg, hsl(${hue} 74% 48%), hsl(${(hue + 22) % 360} 70% 40%))`;
+        chip.style.setProperty('--chip-color-a', `hsl(${hue} 74% 48%)`);
+        chip.style.setProperty('--chip-color-b', `hsl(${(hue + 22) % 360} 70% 40%)`);
+        chip.style.setProperty('--chip-border', `hsl(${((hue + 10) % 360).toFixed(1)} 52% 58% / .55)`);
         chip.innerHTML = `<span>${pattern}</span>`;
         chip.title = '点击删除';
         chip.onclick = () => {

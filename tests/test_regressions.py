@@ -199,6 +199,15 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("#tagPool .album-tag-chip", INDEX_HTML)
         self.assertNotIn("chip.innerHTML = `<span>${tag}</span>`", INDEX_HTML)
 
+    def test_people_and_other_chip_pools_use_colored_chips(self):
+        self.assertIn("chip.className = 'chip colored-chip'", INDEX_HTML)
+        self.assertIn("chip.style.setProperty('--chip-color-a'", INDEX_HTML)
+        self.assertIn("chip.style.setProperty('--chip-color-b'", INDEX_HTML)
+        self.assertIn("chip.style.setProperty('--chip-border'", INDEX_HTML)
+        self.assertIn(".chip.colored-chip", INDEX_HTML)
+        for pool_id in ("authorPool", "anchorPool", "teamPool", "seriesPool", "blacklistPool"):
+            self.assertIn(pool_id, INDEX_HTML)
+
     def test_ypshuo_author_candidates_require_exact_title_and_are_distinct(self):
         candidates = [
             {"id": "1", "novel_name": "我不是戏神", "author_name": "三九音域"},
