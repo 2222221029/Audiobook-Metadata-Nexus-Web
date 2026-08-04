@@ -2116,7 +2116,7 @@ INDEX_HTML = r"""<!doctype html>
     }
     .section-icon {
       width: 22px; height: 22px; display: grid; place-items: center;
-      border-radius: 6px; font-size: 12px; flex-shrink: 0;
+      border-radius: 6px; font-size: 12px; line-height: 0; flex-shrink: 0;
       /* default — overridden per section below */
       background: var(--primary-bg); color: var(--primary-light);
     }
@@ -3287,6 +3287,7 @@ INDEX_HTML = r"""<!doctype html>
       background: transparent !important;
       color: #b9c5d9 !important;
       font-size: 18px;
+      line-height: 0;
     }
     label {
       margin-bottom: 6px;
@@ -3404,6 +3405,8 @@ INDEX_HTML = r"""<!doctype html>
       left: 50%;
       bottom: 12px;
       z-index: 2;
+      opacity: 0;
+      pointer-events: none;
       min-height: 36px;
       padding: 0 14px;
       transform: translateX(-50%);
@@ -3411,22 +3414,23 @@ INDEX_HTML = r"""<!doctype html>
       background: rgba(5,12,22,.78);
       color: #e8edf7;
       backdrop-filter: blur(8px);
+      transition: opacity .15s ease, transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .cover-box:hover .cover-change-button,
+    .cover-change-button:focus-visible {
+      opacity: 1;
+      pointer-events: auto;
     }
     .cover-change-button:hover:not(:disabled) { transform: translateX(-50%); }
+    @media (hover: none) {
+      .cover-change-button {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
     .cover-meta { color: #63728b; }
     .visual-content-column { min-width: 0; }
-    .cover-toolbar { display: flex; min-height: 44px; margin-bottom: 16px; }
-    .cover-toolbar > input[name="manual_cover_path"] {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      min-height: 0;
-      opacity: 0;
-      pointer-events: none;
-    }
-    .cover-actions { gap: 12px; }
-    .cover-actions button { min-width: 145px; min-height: 44px; border-radius: 6px; }
-    .visual-content-column textarea { min-height: 145px; height: 145px; padding: 13px 16px; line-height: 1.72; resize: vertical; }
+    .visual-content-column textarea { min-height: 220px; height: 220px; padding: 13px 16px; line-height: 1.72; resize: vertical; }
 
     .right {
       grid-column: 2;
@@ -4075,14 +4079,8 @@ INDEX_HTML = r"""<!doctype html>
               <div class="cover-meta" id="coverMeta">--</div>
             </div>
             <div class="visual-content-column">
-              <div class="cover-toolbar">
-                <input name="manual_cover_path" placeholder="封面 URL 或容器内路径" />
-                <input type="file" id="coverFileInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
-                <div class="cover-actions">
-                  <button type="button" class="btn-primary" id="uploadCoverBtn">⇧ 从电脑上传</button>
-                  <button type="button" class="quiet-button" id="previewCoverBtn">◉ 预览封面</button>
-                </div>
-              </div>
+              <input type="hidden" name="manual_cover_path" />
+              <input type="file" id="coverFileInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
               <label>简介</label>
               <textarea name="manual_desc" placeholder="简介内容..."></textarea>
             </div>
@@ -5852,8 +5850,6 @@ INDEX_HTML = r"""<!doctype html>
     document.getElementById('removeQueueBtn').onclick = () => removeSelectedQueueStable().catch(e => toast(e.message));
     document.getElementById('editQueueBtn').onclick = () => editSelectedQueue();
     document.getElementById('clearQueueBtn').onclick = () => clearQueue().catch(e => toast(e.message));
-    document.getElementById('previewCoverBtn').onclick = previewCover;
-    document.getElementById('uploadCoverBtn').onclick = () => document.getElementById('coverFileInput').click();
     document.getElementById('coverChangeBtn').onclick = () => document.getElementById('coverFileInput').click();
     document.getElementById('coverFileInput').addEventListener('change', event => {
       uploadCoverFromComputer(event.target.files?.[0]);

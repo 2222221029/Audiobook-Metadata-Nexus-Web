@@ -216,6 +216,11 @@ class RegressionTests(unittest.TestCase):
         self.assertIn('id="startQueueBtn"', INDEX_HTML)
         self.assertIn('id="stopBtn"', INDEX_HTML)
 
+    def test_cover_controls_are_cleaned_up_and_hover_only(self):
+        self.assertNotIn('id="uploadCoverBtn"', INDEX_HTML)
+        self.assertNotIn('id="previewCoverBtn"', INDEX_HTML)
+        self.assertIn(".cover-box:hover .cover-change-button", INDEX_HTML)
+
     def test_author_and_anchor_pools_share_one_row(self):
         self.assertIn('class="people-row"', INDEX_HTML)
         self.assertIn('id="authorPool"', INDEX_HTML)
