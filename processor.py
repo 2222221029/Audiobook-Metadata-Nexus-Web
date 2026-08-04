@@ -78,6 +78,23 @@ def save_process_params(folder_path: str, params: dict, clean_desc: str, desc_so
         if logger: logger.error(f"❌ 保存处理参数失败: {str(e)}")
         return False
 
+
+def resolve_output_folder_path(input_folder: str, new_folder_name: str, conflict_strategy: str = "suffix") -> tuple:
+    new_folder_path = os.path.join(os.path.dirname(input_folder), new_folder_name)
+    if os.path.abspath(new_folder_path) == os.path.abspath(input_folder):
+        return new_folder_path, False
+    if conflict_strategy == "suffix":
+        base_candidate = new_folder_path
+        suffix_index = 1
+        used_suffix = False
+        while os.path.exists(new_folder_path):
+            used_suffix = True
+            new_folder_path = f"{base_candidate} ({suffix_index})"
+            suffix_index += 1
+        return new_folder_path, used_suffix
+    return new_folder_path, os.path.exists(new_folder_path)
+
+
 def save_operation_snapshot(folder_path: str, params: dict, audio_files: list, logger=None) -> bool:
     """保存处理前快照，便于失败恢复和后续撤销功能使用。"""
     try:
@@ -536,27 +553,27 @@ def process_audio_books(params: dict, logger, progress_callback=None, failed_aud
                 bitrate_part,
                 params.get("team", "RL"),
             )
-            new_folder_path = os.path.join(os.path.dirname(input_folder), new_folder_name)
-            if os.path.exists(new_folder_path) and params.get("conflict_strategy", "suffix") == "suffix":
-                base_candidate = new_folder_path
-                suffix_index = 1
-                while os.path.exists(new_folder_path):
-                    new_folder_path = f"{base_candidate} ({suffix_index})"
-                    suffix_index += 1
-                logger.warning(f"输出目录已存在，自动使用备用目录名：{os.path.basename(new_folder_path)}")
+            new_folder_path, used_suffix = resolve_output_folder_path(
+                input_folder,
+                new_folder_name,
+                params.get("conflict_strategy", "suffix"),
+            )
             if os.path.abspath(new_folder_path) == os.path.abspath(input_folder):
                 logger.info("输出目录名称未变化，跳过重命名")
-            elif os.path.exists(input_folder) and os.path.exists(new_folder_path):
-                logger.error(f"输出目录已存在，跳过重命名以避免覆盖：{new_folder_path}")
-            elif os.path.exists(input_folder):
-                logger.info(f"📁 文件夹重命名为: {new_folder_name}")
-                shutil.move(input_folder, new_folder_path)
-                input_folder = new_folder_path
-                if folder_renamed_callback: folder_renamed_callback(new_folder_path)
-                if os.path.exists(new_folder_path):
-                    logger.info(f"✅ 文件夹重命名完成：{new_folder_name}")
-                    save_desc_file(new_folder_path, clean_desc, desc_source, logger)
-                    save_reader_file(new_folder_path, anchor, logger)
+            else:
+                if used_suffix:
+                    logger.warning(f"输出目录已存在，自动使用备用目录名：{os.path.basename(new_folder_path)}")
+                if os.path.exists(input_folder) and os.path.exists(new_folder_path):
+                    logger.error(f"输出目录已存在，跳过重命名以避免覆盖：{new_folder_path}")
+                elif os.path.exists(input_folder):
+                    logger.info(f"📁 文件夹重命名为: {new_folder_name}")
+                    shutil.move(input_folder, new_folder_path)
+                    input_folder = new_folder_path
+                    if folder_renamed_callback: folder_renamed_callback(new_folder_path)
+                    if os.path.exists(new_folder_path):
+                        logger.info(f"✅ 文件夹重命名完成：{new_folder_name}")
+                        save_desc_file(new_folder_path, clean_desc, desc_source, logger)
+                        save_reader_file(new_folder_path, anchor, logger)
         except Exception as e: logger.error(f"❌ 文件夹重命名失败：{e}")
 
         # ==== 生成最终的汇总报告块 ====

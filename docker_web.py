@@ -1333,7 +1333,10 @@ def load_folder_config(folder):
         params["manual_desc"] = desc
     elif params.get("clean_desc") and not params.get("manual_desc"):
         params["manual_desc"] = params.get("clean_desc", "")
-    return {"found": True, "params": params, "message": "ѼĿ¼"}
+    cover = resolve_cover_for_folder(folder_path, params.get("manual_cover_path"))
+    if cover:
+        params["manual_cover_path"] = cover
+    return {"found": True, "params": params, "message": "已加载专辑目录配置"}
 
 
 def json_response(handler, payload, status=200):
@@ -1453,7 +1456,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 params = load_params()
                 folder = params.get("input_folder")
                 if folder and Path(folder).exists():
-                    cover = find_display_cover(Path(folder), params)
+                    cover = resolve_cover_for_folder(folder, params.get("manual_cover_path"))
                     if cover and not params.get("manual_cover_path"):
                         params["manual_cover_path"] = cover
                 return json_response(self, {"ok": True, "params": params, "config_path": str(default_config_path())})
@@ -2901,7 +2904,7 @@ INDEX_HTML = r"""<!doctype html>
     }
     .selection-copy { display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 11px; font-weight: 700; }
     .selection-copy .state-dot { background: var(--primary-light); }
-    .right-commandbar .ha-process { display: grid; grid-template-columns: repeat(3, minmax(110px, 1fr)); gap: 7px; flex: 0 1 430px; }
+    .right-commandbar .ha-process { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; flex: 1; min-width: 0; }
     .right-commandbar .ha-process button { min-height: 38px; padding: 0 12px; font-size: 12px; border-radius: 9px; }
 
     .settings-mask { z-index: 1300; }
@@ -3376,9 +3379,7 @@ INDEX_HTML = r"""<!doctype html>
       display: grid;
       grid-template-columns: minmax(170px, .75fr) minmax(0, 1.55fr);
       gap: 12px 16px;
-      margin-top: 15px;
-      padding-top: 14px;
-      border-top: 1px solid #1d3048;
+      margin-top: 14px;
     }
     .tag-archive { grid-column: 1 / -1; }
     .series-inline { grid-template-columns: minmax(0, 1fr) auto; }
@@ -3431,7 +3432,7 @@ INDEX_HTML = r"""<!doctype html>
       grid-column: 2;
       grid-row: 2;
       display: grid;
-      grid-template-rows: minmax(490px, 1.72fr) minmax(245px, 1fr);
+      grid-template-rows: minmax(0, 1fr);
       gap: 10px;
       min-height: 0;
       padding: 0;
@@ -3478,6 +3479,14 @@ INDEX_HTML = r"""<!doctype html>
       border-radius: 0;
       background: transparent;
       box-shadow: none;
+    }
+    .queue-console > .tab-panel#panel-log {
+      padding: 0;
+    }
+    .queue-console > .tab-panel#panel-log .log {
+      margin: 0;
+      border: 0;
+      border-radius: 0;
     }
     .queue-actions { display: none; }
     .queue-actions.has-selection {
@@ -3562,8 +3571,8 @@ INDEX_HTML = r"""<!doctype html>
       box-shadow: none;
     }
     .selection-copy { color: #8795ac; font-size: 13px; }
-    .right-commandbar .ha-process { display: flex; flex: 0 0 auto; gap: 12px; }
-    .right-commandbar .ha-process button { min-width: 130px; min-height: 45px; border-radius: 6px; font-size: 13px; }
+    .right-commandbar .ha-process { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; flex: 1; min-width: 0; }
+    .right-commandbar .ha-process button { min-width: 0; min-height: 45px; border-radius: 6px; font-size: 13px; }
     #addQueueBtn { background: transparent; border-color: #765fe1; color: #aa94ff; }
     #startQueueBtn { background: rgba(48,87,173,.28); border-color: #4f7ada; color: #7ea8ff; box-shadow: none; }
     #stopBtn { background: rgba(188,29,36,.38); border-color: #ef343d; color: #ffb0b4; box-shadow: none; }
@@ -3918,7 +3927,7 @@ INDEX_HTML = r"""<!doctype html>
       .cover-box { width: min(100%, 220px); height: 220px; margin: 0 auto; }
       .cover-actions { width: 100%; }
       .cover-actions button { flex: 1; min-width: 0; }
-      .right { display: grid; grid-template-rows: minmax(520px, 1.5fr) minmax(280px, 1fr); min-height: 840px; }
+      .right { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 680px; }
       .tabs { overflow-x: auto; }
       .right-commandbar { align-items: stretch; flex-direction: column; min-height: 0; flex-basis: auto; }
       .right-commandbar .ha-process { display: grid; width: 100%; grid-template-columns: 1fr; }
@@ -3975,7 +3984,6 @@ INDEX_HTML = r"""<!doctype html>
     <section class="left">
       <div class="workspace-heading" hidden>
         <div><strong>元数据工作区</strong><span>配置来源、归档规格与内容信息</span></div>
-        <button type="button" class="workspace-clear" id="clearBtn">清空编辑区</button>
       </div>
 
       <form class="form-scroll" id="configForm">
@@ -4115,19 +4123,20 @@ INDEX_HTML = r"""<!doctype html>
           </div>
         </div>
 
+        <div class="tab-panel" id="panel-log">
+          <div class="live-log-head"><strong>◉ 处理日志（实时）</strong><button type="button" class="quiet-button" id="clearLogBtn">▧ 清空日志</button></div>
+          <div class="log" id="logBox"></div>
+        </div>
+
         <div class="right-commandbar">
           <div class="selection-copy"><span>已选 <b id="selectedCountText">0</b> 项</span></div>
           <div class="ha-process">
             <button type="button" class="quiet-button" id="addQueueBtn">＋ 加入队列</button>
             <button type="button" class="btn-indigo" id="startQueueBtn">▷ 开始处理</button>
             <button type="button" class="btn-red" id="stopBtn">□ 停止</button>
+            <button type="button" class="quiet-button" id="clearBtn">▧ 清空编辑区</button>
           </div>
         </div>
-      </div>
-
-      <div class="live-log-card">
-        <div class="live-log-head"><strong>◉ 处理日志（实时）</strong><button type="button" class="quiet-button" id="clearLogBtn">▧ 清空日志</button></div>
-        <div class="tab-panel active" id="panel-log"><div class="log" id="logBox"></div></div>
       </div>
     </section>
   </div>
@@ -4257,10 +4266,6 @@ INDEX_HTML = r"""<!doctype html>
             </div>
           </section>
         </div>
-        <section class="settings-danger">
-          <div><strong>编辑区维护</strong><span>清空当前表单中的专辑参数，不会删除音频文件。</span></div>
-          <button type="button" class="btn-red" id="settingsClearBtn">清空编辑区</button>
-        </section>
       </div>
       <div class="modal-foot settings-foot"><span class="hint">修改平台 Cookie 后会写入容器配置目录。</span><button type="button" class="btn-primary" id="doneSettingsBtn">完成</button></div>
     </div>
@@ -5806,13 +5811,9 @@ INDEX_HTML = r"""<!doctype html>
     document.querySelectorAll('.tab').forEach(btn => btn.onclick = () => {
       document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
       btn.classList.add('active');
-      if (btn.dataset.tab === 'log') {
-        scheduleLogRender(true);
-        document.querySelector('.live-log-card')?.scrollIntoView({behavior: 'smooth', block: 'nearest'});
-        return;
-      }
       document.querySelectorAll('.queue-console > .tab-panel').forEach(x => x.classList.remove('active'));
       document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'log') scheduleLogRender(true);
     });
     form.addEventListener('input', e => e.target.classList.remove('field-error'));
     form.addEventListener('change', e => e.target.classList.remove('field-error'));
@@ -5859,10 +5860,6 @@ INDEX_HTML = r"""<!doctype html>
       event.target.value = '';
     });
     document.getElementById('clearBtn').onclick = () => clearAll().catch(e => toast(e.message));
-    document.getElementById('settingsClearBtn').onclick = () => {
-      closeSettingsModal();
-      clearAll().catch(e => toast(e.message));
-    };
     document.getElementById('failedBtn').onclick = () => document.querySelector('[data-tab="failed"]').click();
     document.getElementById('retryBtn').onclick = () => retryFailedQueue().catch(e => toast(e.message));
     document.getElementById('cookieBtn').onclick = () => {

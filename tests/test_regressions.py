@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from api_clients import _matching_ypshuo_authors
 from metadata_helpers import build_output_folder_name
-from processor import load_operation_snapshot, restore_operation_snapshot, save_operation_snapshot
+from processor import load_operation_snapshot, resolve_output_folder_path, restore_operation_snapshot, save_operation_snapshot
 from docker_web import (
     AppState,
     INDEX_HTML,
@@ -15,6 +15,7 @@ from docker_web import (
     collect_ximalaya_app_tags,
     extract_ximalaya_release_year,
     fetch_api_metadata,
+    load_folder_config,
     normalize_ximalaya_payload,
 )
 
@@ -140,7 +141,7 @@ class RegressionTests(unittest.TestCase):
     def test_dark_console_matches_preview_structure(self):
         for marker in (
             'class="theme-cluster"', 'id="queueCountText"', 'class="queue-console"',
-            'class="live-log-card"', 'id="selectedCountText"', 'id="clearLogBtn"',
+            'id="panel-log"', 'id="selectedCountText"', 'id="clearLogBtn"',
             'class="metadata-title-grid"', 'class="archive-main-grid"',
         ):
             self.assertIn(marker, INDEX_HTML)
@@ -148,8 +149,8 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("grid-template-columns: minmax(650px, 1.03fr) minmax(610px, .97fr)", INDEX_HTML)
         self.assertIn("applyTheme('dark')", INDEX_HTML)
 
-    def test_preview_layout_keeps_live_log_visible_with_queue(self):
-        self.assertIn('.live-log-card #panel-log, .live-log-card #panel-log.active', INDEX_HTML)
+    def test_preview_layout_switches_queue_and_log_panels(self):
+        self.assertIn('.queue-console > .tab-panel#panel-log', INDEX_HTML)
         self.assertIn("document.querySelectorAll('.queue-console > .tab-panel')", INDEX_HTML)
         self.assertNotIn("document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'))", INDEX_HTML)
 
@@ -208,6 +209,13 @@ class RegressionTests(unittest.TestCase):
         for pool_id in ("authorPool", "anchorPool", "teamPool", "seriesPool", "blacklistPool"):
             self.assertIn(pool_id, INDEX_HTML)
 
+    def test_clear_edit_area_is_grouped_with_queue_buttons(self):
+        self.assertIn('id="clearBtn"', INDEX_HTML)
+        self.assertNotIn('id="settingsClearBtn"', INDEX_HTML)
+        self.assertIn('id="addQueueBtn"', INDEX_HTML)
+        self.assertIn('id="startQueueBtn"', INDEX_HTML)
+        self.assertIn('id="stopBtn"', INDEX_HTML)
+
     def test_author_and_anchor_pools_share_one_row(self):
         self.assertIn('class="people-row"', INDEX_HTML)
         self.assertIn('id="authorPool"', INDEX_HTML)
@@ -215,6 +223,34 @@ class RegressionTests(unittest.TestCase):
         self.assertIn(".people-row .entity-row", INDEX_HTML)
         self.assertIn("placeholder: '请输入作者，回车添加'", INDEX_HTML)
         self.assertIn("placeholder: '请输入演播者，回车添加'", INDEX_HTML)
+
+    def test_folder_config_restores_saved_cover(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "processed"
+            folder.mkdir()
+            (folder / "process_params.json").write_text(json.dumps({"title": "书"}), encoding="utf-8")
+            cover = folder / "cover.jpg"
+            cover.write_bytes(b"cover")
+            result = load_folder_config(str(folder))
+            self.assertTrue(result["found"])
+            self.assertEqual(Path(result["params"]["manual_cover_path"]).resolve(), cover.resolve())
+
+    def test_output_folder_does_not_suffix_processed_input_folder(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            folder = parent / "书 - 作者 - 演播 - 完结 - 2024 - MP3 128k -RL"
+            folder.mkdir()
+            path, used_suffix = resolve_output_folder_path(str(folder), folder.name, "suffix")
+            self.assertEqual(Path(path).resolve(), folder.resolve())
+            self.assertFalse(used_suffix)
+            path, used_suffix = resolve_output_folder_path(str(folder), "新目录", "suffix")
+            self.assertEqual(Path(path).resolve(), (parent / "新目录").resolve())
+            self.assertFalse(used_suffix)
+            conflict = parent / "同名目录"
+            conflict.mkdir()
+            path, used_suffix = resolve_output_folder_path(str(folder), conflict.name, "suffix")
+            self.assertEqual(Path(path).resolve(), (parent / "同名目录 (1)").resolve())
+            self.assertTrue(used_suffix)
 
     def test_ypshuo_author_candidates_require_exact_title_and_are_distinct(self):
         candidates = [
