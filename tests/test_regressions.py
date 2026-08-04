@@ -173,19 +173,19 @@ class RegressionTests(unittest.TestCase):
             ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .log',
         ):
             self.assertIn(selector, INDEX_HTML)
-        self.assertIn("--bg: #edf1f7", INDEX_HTML)
+        self.assertIn("--bg: #f4f6fa", INDEX_HTML)
 
     def test_settings_center_exposes_nine_curated_themes(self):
         for theme, label in (
-            ("dark", "曜石深色"),
-            ("light", "云雾浅色"),
-            ("linen", "暖砂浅色"),
-            ("mint", "薄荷浅色"),
-            ("rose", "蔷薇浅色"),
-            ("ocean", "深海蓝"),
-            ("aurora", "极光紫"),
-            ("jade", "松石青"),
-            ("graphite", "钛金灰"),
+            ("dark", "墨夜"),
+            ("light", "素雪"),
+            ("linen", "茶白"),
+            ("mint", "青瓷"),
+            ("rose", "胭脂"),
+            ("ocean", "黛蓝"),
+            ("aurora", "暮紫"),
+            ("jade", "碧波"),
+            ("graphite", "玄灰"),
         ):
             self.assertIn(f'data-theme-option="{theme}"', INDEX_HTML)
             self.assertIn(label, INDEX_HTML)
@@ -247,6 +247,21 @@ class RegressionTests(unittest.TestCase):
         self.assertIn(".people-row .entity-row", INDEX_HTML)
         self.assertIn("placeholder: '请输入作者，回车添加'", INDEX_HTML)
         self.assertIn("placeholder: '请输入演播者，回车添加'", INDEX_HTML)
+        self.assertIn("editor.dataset.placeholder = values.length ? '' : (options.placeholder || '')", INDEX_HTML)
+        self.assertIn("placeholder: '请输入制作团队，回车添加'", INDEX_HTML)
+
+    def test_clear_edit_area_clears_cover_and_cover_is_square(self):
+        self.assertIn("form.manual_cover_path.value = ''", INDEX_HTML)
+        self.assertIn("img.removeAttribute('src')", INDEX_HTML)
+        self.assertIn("height: 192px", INDEX_HTML)
+
+    def test_queue_has_checkboxes_and_platform_logos(self):
+        self.assertIn('type="checkbox" class="queue-check"', INDEX_HTML)
+        self.assertIn('colspan="7"', INDEX_HTML)
+        self.assertIn("platformLogoHtml(platform)", INDEX_HTML)
+
+    def test_settings_toast_results_are_above_modal(self):
+        self.assertIn(".toast {\n      z-index: 2000;", INDEX_HTML)
 
     def test_folder_config_restores_saved_cover(self):
         with tempfile.TemporaryDirectory() as tmp:

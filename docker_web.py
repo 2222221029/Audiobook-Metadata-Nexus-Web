@@ -1683,10 +1683,10 @@ INDEX_HTML = r"""<!doctype html>
        ══════════════════════════════════════════════ */
     :root,
     html[data-theme="dark"] {
-      --bg:           #07091a;
-      --surface:      #0d1226;
-      --surface-2:    #141b32;
-      --surface-3:    #1b2440;
+      --bg:           #050a14;
+      --surface:      #0b1220;
+      --surface-2:    #101a2c;
+      --surface-3:    #172238;
       --glass:        rgba(255,255,255,.035);
       --border:       rgba(255,255,255,.07);
       --border-med:   rgba(255,255,255,.13);
@@ -1694,10 +1694,10 @@ INDEX_HTML = r"""<!doctype html>
       --text:         #e8edf8;
       --text-2:       #8b99b8;
       --text-3:       #4e5f7a;
-      --primary:      #6366f1;
-      --primary-light:#818cf8;
-      --primary-glow: rgba(99,102,241,.32);
-      --primary-bg:   rgba(99,102,241,.13);
+      --primary:      #6f7df7;
+      --primary-light:#8f9cff;
+      --primary-glow: rgba(111,125,247,.32);
+      --primary-bg:   rgba(111,125,247,.13);
       --success:      #10b981;
       --success-glow: rgba(16,185,129,.28);
       --success-bg:   rgba(16,185,129,.12);
@@ -1727,21 +1727,21 @@ INDEX_HTML = r"""<!doctype html>
        DESIGN TOKENS  —  Light Theme
        ══════════════════════════════════════════════ */
     html[data-theme="light"] {
-      --bg:           #eef1f8;
+      --bg:           #f4f6fa;
       --surface:      #ffffff;
       --surface-2:    #f4f6fb;
-      --surface-3:    #e8ecf5;
+      --surface-3:    #e9edf5;
       --glass:        rgba(0,0,0,.024);
       --border:       rgba(0,0,0,.08);
       --border-med:   rgba(0,0,0,.13);
       --border-strong:rgba(0,0,0,.22);
       --text:         #111827;
       --text-2:       #4b5675;
-      --text-3:       #8895b2;
-      --primary:      #4f46e5;
-      --primary-light:#6366f1;
-      --primary-glow: rgba(79,70,229,.22);
-      --primary-bg:   rgba(79,70,229,.09);
+      --text-3:       #8391a8;
+      --primary:      #5263d9;
+      --primary-light:#6b79e8;
+      --primary-glow: rgba(82,99,217,.22);
+      --primary-bg:   rgba(82,99,217,.09);
       --success:      #059669;
       --success-glow: rgba(5,150,105,.2);
       --success-bg:   rgba(5,150,105,.09);
@@ -1768,10 +1768,10 @@ INDEX_HTML = r"""<!doctype html>
     }
     html[data-theme="linen"] {
       color-scheme: light;
-      --bg:           #f6f0e6;
-      --surface:      #fffdf8;
-      --surface-2:    #f7f0e4;
-      --surface-3:    #efe6d7;
+      --bg:           #f7f2e9;
+      --surface:      #fffcf6;
+      --surface-2:    #f8f1e5;
+      --surface-3:    #efe4d3;
       --glass:        rgba(120,80,40,.03);
       --border:       #e3d7c6;
       --border-med:   #d3c2a9;
@@ -1809,10 +1809,10 @@ INDEX_HTML = r"""<!doctype html>
     }
     html[data-theme="mint"] {
       color-scheme: light;
-      --bg:           #eef7f2;
+      --bg:           #eef5f1;
       --surface:      #ffffff;
-      --surface-2:    #f2faf6;
-      --surface-3:    #e2f1e9;
+      --surface-2:    #f1f8f4;
+      --surface-3:    #dcebe3;
       --glass:        rgba(15,118,110,.03);
       --border:       #cfe7db;
       --border-med:   #b6d9c8;
@@ -1850,10 +1850,10 @@ INDEX_HTML = r"""<!doctype html>
     }
     html[data-theme="rose"] {
       color-scheme: light;
-      --bg:           #fbf1f4;
+      --bg:           #faf3f5;
       --surface:      #fffdfd;
-      --surface-2:    #fdf4f6;
-      --surface-3:    #f7e7ec;
+      --surface-2:    #fdf3f5;
+      --surface-3:    #f6e3e8;
       --glass:        rgba(190,18,60,.03);
       --border:       #eed7de;
       --border-med:   #dfbcc7;
@@ -3168,21 +3168,21 @@ INDEX_HTML = r"""<!doctype html>
        DARK CONSOLE — PREVIEW MATCH
        ══════════════════════════════════════════════ */
     html[data-theme="dark"] {
-      --bg: #030b16;
-      --surface: #081525;
-      --surface-2: #0c1a2c;
-      --surface-3: #122238;
+      --bg: #050a14;
+      --surface: #0b1220;
+      --surface-2: #101a2c;
+      --surface-3: #172238;
       --glass: rgba(151,169,201,.045);
-      --border: #192a40;
-      --border-med: #253a55;
-      --border-strong: #385273;
-      --text: #eef3fb;
-      --text-2: #a9b5ca;
-      --text-3: #6f7f99;
-      --primary: #7258f5;
-      --primary-light: #9a82ff;
-      --primary-glow: rgba(114,88,245,.24);
-      --primary-bg: rgba(114,88,245,.13);
+      --border: #1d2c44;
+      --border-med: #2a3d5a;
+      --border-strong: #425a7e;
+      --text: #eef2f8;
+      --text-2: #a8b4c8;
+      --text-3: #67758d;
+      --primary: #6f7df7;
+      --primary-light: #8f9cff;
+      --primary-glow: rgba(111,125,247,.24);
+      --primary-bg: rgba(111,125,247,.13);
       --success: #38d68c;
       --success-bg: rgba(29,186,116,.13);
       --danger: #f14343;
@@ -3194,84 +3194,84 @@ INDEX_HTML = r"""<!doctype html>
     }
     html[data-theme="ocean"] {
       color-scheme: dark;
-      --bg: #03131d;
-      --surface: #08212d;
-      --surface-2: #0b2a38;
-      --surface-3: #123746;
+      --bg: #04161f;
+      --surface: #08232e;
+      --surface-2: #0b2c39;
+      --surface-3: #123947;
       --glass: rgba(122,196,208,.055);
-      --border: #173b4b;
-      --border-med: #245166;
-      --border-strong: #39748a;
-      --text: #e9f5f7;
-      --text-2: #9ebdc5;
-      --text-3: #5f8490;
-      --primary: #1697ad;
-      --primary-light: #59cad5;
-      --primary-glow: rgba(22,151,173,.24);
-      --primary-bg: rgba(22,151,173,.14);
+      --border: #173d4e;
+      --border-med: #245468;
+      --border-strong: #3a768c;
+      --text: #e8f4f6;
+      --text-2: #9cbbc4;
+      --text-3: #5e7f8b;
+      --primary: #158a9e;
+      --primary-light: #54c3d0;
+      --primary-glow: rgba(21,138,158,.24);
+      --primary-bg: rgba(21,138,158,.14);
       --input-bg: #061b25;
       --log-bg: #051923;
       --log-text: #b0c9ce;
     }
     html[data-theme="aurora"] {
       color-scheme: dark;
-      --bg: #100b18;
-      --surface: #1a1226;
-      --surface-2: #231830;
-      --surface-3: #30203d;
+      --bg: #140f1e;
+      --surface: #1e172c;
+      --surface-2: #281e39;
+      --surface-3: #352747;
       --glass: rgba(207,166,222,.05);
-      --border: #382744;
-      --border-med: #4d365c;
-      --border-strong: #70507e;
-      --text: #f4eef7;
-      --text-2: #c1b0c8;
-      --text-3: #806e88;
-      --primary: #9a63c5;
-      --primary-light: #cf98e0;
-      --primary-glow: rgba(154,99,197,.24);
-      --primary-bg: rgba(154,99,197,.14);
+      --border: #3d2c50;
+      --border-med: #503b67;
+      --border-strong: #6f5489;
+      --text: #f3eef8;
+      --text-2: #c1afce;
+      --text-3: #7d6a8e;
+      --primary: #8f5fbf;
+      --primary-light: #c396de;
+      --primary-glow: rgba(143,95,191,.24);
+      --primary-bg: rgba(143,95,191,.14);
       --input-bg: #160f20;
       --log-bg: #140d1d;
       --log-text: #c9b9cf;
     }
     html[data-theme="jade"] {
       color-scheme: dark;
-      --bg: #07140f;
-      --surface: #0d2118;
-      --surface-2: #122a20;
+      --bg: #071511;
+      --surface: #0d2119;
+      --surface-2: #122b22;
       --surface-3: #1a382c;
       --glass: rgba(157,201,179,.05);
-      --border: #203b30;
-      --border-med: #315346;
-      --border-strong: #4c7564;
+      --border: #203c31;
+      --border-med: #315547;
+      --border-strong: #4b7664;
       --text: #eef6f1;
       --text-2: #abc1b4;
       --text-3: #698276;
-      --primary: #4c9d82;
-      --primary-light: #80c5ad;
-      --primary-glow: rgba(76,157,130,.24);
-      --primary-bg: rgba(76,157,130,.14);
+      --primary: #3f9277;
+      --primary-light: #74bfa2;
+      --primary-glow: rgba(63,146,119,.24);
+      --primary-bg: rgba(63,146,119,.14);
       --input-bg: #091b14;
       --log-bg: #081912;
       --log-text: #b5c9bd;
     }
     html[data-theme="graphite"] {
       color-scheme: dark;
-      --bg: #111317;
-      --surface: #191c21;
-      --surface-2: #20242a;
-      --surface-3: #2b3037;
+      --bg: #0f1217;
+      --surface: #171b21;
+      --surface-2: #1e242c;
+      --surface-3: #29313b;
       --glass: rgba(188,199,215,.045);
-      --border: #30363f;
-      --border-med: #414a56;
-      --border-strong: #5d6978;
+      --border: #303944;
+      --border-med: #414c5a;
+      --border-strong: #5d6a7b;
       --text: #f0f2f5;
       --text-2: #b4bbc5;
       --text-3: #7b8490;
-      --primary: #70829d;
-      --primary-light: #a6b5cb;
-      --primary-glow: rgba(112,130,157,.24);
-      --primary-bg: rgba(112,130,157,.15);
+      --primary: #66778f;
+      --primary-light: #9aabbe;
+      --primary-glow: rgba(102,119,143,.24);
+      --primary-bg: rgba(102,119,143,.15);
       --input-bg: #16191d;
       --log-bg: #15181c;
       --log-text: #c0c5cc;
@@ -3569,7 +3569,7 @@ INDEX_HTML = r"""<!doctype html>
     .cover-box {
       position: relative;
       width: 192px;
-      height: 228px;
+      height: 192px;
       border-radius: 7px;
       border-color: #31465f;
       background: #0c1929;
@@ -3710,10 +3710,20 @@ INDEX_HTML = r"""<!doctype html>
     .queue-console tbody tr:nth-child(even) td { background: transparent; }
     .queue-console tbody tr.selected td { background: rgba(114,88,245,.10) !important; }
     .queue-console th:nth-child(1), .queue-console td:nth-child(1) { width: 34px; }
-    .queue-console th:nth-child(2) { width: 38%; }
-    .queue-console th:nth-child(3) { width: 19%; }
-    .queue-console th:nth-child(4) { width: 22%; }
-    .queue-console th:nth-child(5) { width: 15%; }
+    .queue-console th:nth-child(2), .queue-console td:nth-child(2) { width: 30px; }
+    .queue-console th:nth-child(3) { width: 36%; }
+    .queue-console th:nth-child(4) { width: 19%; }
+    .queue-console th:nth-child(5) { width: 20%; }
+    .queue-console th:nth-child(6) { width: 15%; }
+    .queue-check {
+      width: 16px;
+      height: 16px;
+      min-width: 16px;
+      min-height: 16px;
+      margin: 0;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
     .queue-platform { display: inline-flex; align-items: center; gap: 7px; color: #d3dae7; }
     .queue-platform-icon {
       display: grid;
@@ -3795,16 +3805,16 @@ INDEX_HTML = r"""<!doctype html>
 
     /* Complete light palette for the redesigned console. */
     html[data-theme="light"] {
-      --bg: #edf1f7;
+      --bg: #f4f6fa;
       --surface: #ffffff;
       --surface-2: #f7f9fc;
-      --surface-3: #eef2f7;
-      --border: #dce3ed;
-      --border-med: #cbd5e3;
-      --border-strong: #aebbcf;
-      --text: #172033;
-      --text-2: #52617a;
-      --text-3: #8997ad;
+      --surface-3: #e9edf5;
+      --border: #d8deea;
+      --border-med: #c6cfdf;
+      --border-strong: #a8b4ca;
+      --text: #1a2233;
+      --text-2: #4d5b74;
+      --text-3: #8391a8;
       --input-bg: #ffffff;
       --log-bg: #f7f9fc;
       --log-text: #46566f;
@@ -3954,15 +3964,15 @@ INDEX_HTML = r"""<!doctype html>
     .theme-preview i { position: relative; z-index: 1; width: 8px; height: 5px; border-radius: 3px; background: var(--preview-accent); }
     .theme-preview i:nth-child(2) { width: 12px; opacity: .72; }
     .theme-preview i:nth-child(3) { width: 6px; opacity: .46; }
-    .preview-dark { --preview-bg:#030b16; --preview-card:#0c1a2c; --preview-border:#253a55; --preview-accent:#8d73ff; }
-    .preview-light { --preview-bg:#edf1f7; --preview-card:#fff; --preview-border:#cbd5e3; --preview-accent:#6657e8; }
-    .preview-linen { --preview-bg:#f6f0e6; --preview-card:#fffdf8; --preview-border:#d3c2a9; --preview-accent:#d97706; }
-    .preview-mint { --preview-bg:#eef7f2; --preview-card:#fff; --preview-border:#b6d9c8; --preview-accent:#0d9488; }
-    .preview-rose { --preview-bg:#fbf1f4; --preview-card:#fffdfd; --preview-border:#dfbcc7; --preview-accent:#e11d48; }
-    .preview-ocean { --preview-bg:#03131d; --preview-card:#0b2a38; --preview-border:#245166; --preview-accent:#59cad5; }
-    .preview-aurora { --preview-bg:#100b18; --preview-card:#231830; --preview-border:#4d365c; --preview-accent:#cf98e0; }
-    .preview-jade { --preview-bg:#07140f; --preview-card:#122a20; --preview-border:#315346; --preview-accent:#80c5ad; }
-    .preview-graphite { --preview-bg:#111317; --preview-card:#20242a; --preview-border:#414a56; --preview-accent:#a6b5cb; }
+    .preview-dark { --preview-bg:#050a14; --preview-card:#101a2c; --preview-border:#2a3d5a; --preview-accent:#8f9cff; }
+    .preview-light { --preview-bg:#f4f6fa; --preview-card:#fff; --preview-border:#c6cfdf; --preview-accent:#6b79e8; }
+    .preview-linen { --preview-bg:#f7f2e9; --preview-card:#fffcf6; --preview-border:#d3c2a9; --preview-accent:#d97706; }
+    .preview-mint { --preview-bg:#eef5f1; --preview-card:#fff; --preview-border:#b4d2c3; --preview-accent:#0d9488; }
+    .preview-rose { --preview-bg:#faf3f5; --preview-card:#fffdfd; --preview-border:#dfb9c5; --preview-accent:#e11d48; }
+    .preview-ocean { --preview-bg:#04161f; --preview-card:#0b2c39; --preview-border:#245468; --preview-accent:#54c3d0; }
+    .preview-aurora { --preview-bg:#140f1e; --preview-card:#281e39; --preview-border:#503b67; --preview-accent:#c396de; }
+    .preview-jade { --preview-bg:#071511; --preview-card:#122b22; --preview-border:#315547; --preview-accent:#74bfa2; }
+    .preview-graphite { --preview-bg:#0f1217; --preview-card:#1e242c; --preview-border:#414c5a; --preview-accent:#9aabbe; }
 
     :is(html[data-theme="ocean"], html[data-theme="aurora"], html[data-theme="jade"], html[data-theme="graphite"]) body {
       background:
@@ -4170,6 +4180,9 @@ INDEX_HTML = r"""<!doctype html>
     .modal {
       border-color: color-mix(in srgb, var(--border-med) 86%, transparent);
       box-shadow: 0 26px 70px rgba(0,0,0,.28), inset 0 1px 0 color-mix(in srgb, var(--surface) 88%, transparent);
+    }
+    .toast {
+      z-index: 2000;
     }
 
     @media (max-width: 1500px) and (min-width: 1181px) {
@@ -4394,7 +4407,7 @@ INDEX_HTML = r"""<!doctype html>
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>专辑标题</th><th>平台</th><th>进度</th><th>状态</th><th>操作</th></tr></thead>
+              <thead><tr><th></th><th>#</th><th>专辑标题</th><th>平台</th><th>进度</th><th>状态</th><th>操作</th></tr></thead>
               <tbody id="queueBody"></tbody>
             </table>
           </div>
@@ -4486,31 +4499,31 @@ INDEX_HTML = r"""<!doctype html>
             <div class="settings-card-head"><span class="settings-icon">◐</span><div><strong>外观主题</strong><span>选择适合当前环境的工作台配色</span></div></div>
             <div class="theme-picker" id="themePicker">
               <button type="button" class="theme-option" data-theme-option="dark">
-                <span class="theme-preview preview-dark"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>曜石深色</strong><small>经典深蓝黑</small></span><span class="theme-selected">✓</span>
+                <span class="theme-preview preview-dark"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>墨夜</strong><small>典雅墨蓝</small></span><span class="theme-selected">✓</span>
               </button>
               <button type="button" class="theme-option" data-theme-option="light">
-                <span class="theme-preview preview-light"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>云雾浅色</strong><small>清爽银白</small></span><span class="theme-selected">✓</span>
+                <span class="theme-preview preview-light"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>素雪</strong><small>清润月白</small></span><span class="theme-selected">✓</span>
               </button>
               <button type="button" class="theme-option" data-theme-option="linen">
-                <span class="theme-preview preview-linen"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>暖砂浅色</strong><small>柔和米杏</small></span><span class="theme-selected">✓</span>
+                <span class="theme-preview preview-linen"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>茶白</strong><small>温润米茶</small></span><span class="theme-selected">✓</span>
               </button>
               <button type="button" class="theme-option" data-theme-option="mint">
-                <span class="theme-preview preview-mint"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>薄荷浅色</strong><small>清新豆绿</small></span><span class="theme-selected">✓</span>
+                <span class="theme-preview preview-mint"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>青瓷</strong><small>含蓄青绿</small></span><span class="theme-selected">✓</span>
               </button>
               <button type="button" class="theme-option" data-theme-option="rose">
-                <span class="theme-preview preview-rose"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>蔷薇浅色</strong><small>柔粉暖调</small></span><span class="theme-selected">✓</span>
+                <span class="theme-preview preview-rose"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>胭脂</strong><small>柔雅绯粉</small></span><span class="theme-selected">✓</span>
               </button>
               <button type="button" class="theme-option" data-theme-option="ocean">
-                <span class="theme-preview preview-ocean"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>深海蓝</strong><small>沉静海洋</small></span><span class="theme-selected">✓</span>
+                <span class="theme-preview preview-ocean"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>黛蓝</strong><small>沉静黛青</small></span><span class="theme-selected">✓</span>
               </button>
               <button type="button" class="theme-option" data-theme-option="aurora">
-                <span class="theme-preview preview-aurora"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>极光紫</strong><small>优雅暮光</small></span><span class="theme-selected">✓</span>
+                <span class="theme-preview preview-aurora"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>暮紫</strong><small>端庄暮紫</small></span><span class="theme-selected">✓</span>
               </button>
               <button type="button" class="theme-option" data-theme-option="jade">
-                <span class="theme-preview preview-jade"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>松石青</strong><small>克制自然</small></span><span class="theme-selected">✓</span>
+                <span class="theme-preview preview-jade"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>碧波</strong><small>自然青碧</small></span><span class="theme-selected">✓</span>
               </button>
               <button type="button" class="theme-option" data-theme-option="graphite">
-                <span class="theme-preview preview-graphite"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>钛金灰</strong><small>专业中性</small></span><span class="theme-selected">✓</span>
+                <span class="theme-preview preview-graphite"><i></i><i></i><i></i></span><span class="theme-option-copy"><strong>玄灰</strong><small>克制水墨</small></span><span class="theme-selected">✓</span>
               </button>
             </div>
           </section>
@@ -4561,9 +4574,9 @@ INDEX_HTML = r"""<!doctype html>
     /* ── Theme Toggle ──────────────────────────── */
     const _THEME_KEY = 'audiometa-theme-v3-dark-console';
     const _THEMES = Object.freeze({
-      dark: '曜石深色', light: '云雾浅色', linen: '暖砂浅色', mint: '薄荷浅色', rose: '蔷薇浅色',
-      ocean: '深海蓝',
-      aurora: '极光紫', jade: '松石青', graphite: '钛金灰',
+      dark: '墨夜', light: '素雪', linen: '茶白', mint: '青瓷', rose: '胭脂',
+      ocean: '黛蓝',
+      aurora: '暮紫', jade: '碧波', graphite: '玄灰',
     });
     const _LIGHT_THEMES = new Set(['light', 'linen', 'mint', 'rose']);
     let _lastLightTheme = 'light';
@@ -4577,7 +4590,7 @@ INDEX_HTML = r"""<!doctype html>
         btn.textContent = '';
         const isLight = _LIGHT_THEMES.has(theme);
         btn.setAttribute('aria-pressed', isLight ? 'false' : 'true');
-        btn.title = isLight ? '切换到曜石深色' : `切换到${_THEMES[_lastLightTheme] || '云雾浅色'}`;
+        btn.title = isLight ? '切换到墨夜' : `切换到${_THEMES[_lastLightTheme] || '素雪'}`;
       }
       document.querySelectorAll('[data-theme-option]').forEach(option => {
         const active = option.dataset.themeOption === theme;
@@ -4884,6 +4897,12 @@ INDEX_HTML = r"""<!doctype html>
       logo.style.setProperty('--brand-color', brand.color);
       logo.title = '';
       return logo;
+    }
+
+    function platformLogoHtml(text) {
+      const brand = platformBrand(text);
+      if (!brand) return '';
+      return `<span class="platform-logo" style="--brand-color:${brand.color}">${brand.mark}</span>`;
     }
 
     function renderCustomSelectOptionContent(option, text) {
@@ -5212,7 +5231,7 @@ INDEX_HTML = r"""<!doctype html>
         editor.className = 'chip-input';
         editor.contentEditable = 'true';
         editor.spellcheck = false;
-        editor.dataset.placeholder = options.placeholder || '';
+        editor.dataset.placeholder = values.length ? '' : (options.placeholder || '');
         editor.addEventListener('keydown', event => {
           if (event.key !== 'Enter') return;
           event.preventDefault();
@@ -5247,7 +5266,7 @@ INDEX_HTML = r"""<!doctype html>
       renderPeople(teamPool, teams, index => {
         teams.splice(index, 1);
         renderTeams();
-      }, { editable: true, target: teams, renderFn: renderTeams, single: true, placeholder: '' });
+      }, { editable: true, target: teams, renderFn: renderTeams, single: true, placeholder: '请输入制作团队，回车添加' });
     }
 
     function renderSeries() {
@@ -5688,6 +5707,7 @@ INDEX_HTML = r"""<!doctype html>
       seriesList = [];
       tags = [];
       currentRawMetadata = {};
+      form.manual_cover_path.value = '';
       renderAuthors();
       renderAnchors();
       renderTeams();
@@ -5710,7 +5730,7 @@ INDEX_HTML = r"""<!doctype html>
       tbody.innerHTML = '';
       if (!(queue || []).length) {
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="6"><div class="empty-state"><div><strong>任务队列为空</strong><span>填写左侧专辑信息后，可加入队列或直接开始处理。</span></div></div></td>';
+        tr.innerHTML = '<td colspan="7"><div class="empty-state"><div><strong>任务队列为空</strong><span>填写左侧专辑信息后，可加入队列或直接开始处理。</span></div></div></td>';
         tbody.appendChild(tr);
         selectedQueueIds.clear();
         updateSelectedQueueUi();
@@ -5725,12 +5745,22 @@ INDEX_HTML = r"""<!doctype html>
         const progress = item.status === 'done' ? 100 : item.status === 'processing' ? Math.round(latestStatus?.progress || 0) : 0;
         const progressText = item.status === 'pending' || item.status === 'stopped' ? '—' : `${progress}%`;
         const platformMark = String(platform).includes('喜马拉雅') ? '听' : String(platform).includes('蜻蜓') ? '蜓' : String(platform).slice(0, 1);
+        const platformLogo = platformLogoHtml(platform) || `<i class="queue-platform-icon">${escapeHtml(platformMark)}</i>`;
+        const isSelected = selectedQueueIds.has(item.id);
         tr.dataset.queueId = item.id;
         tr.title = item.source || '';
-        tr.classList.toggle('selected', selectedQueueIds.has(item.id));
-        tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(item.title || '未命名')}</td><td><span class="queue-platform"><i class="queue-platform-icon">${escapeHtml(platformMark)}</i>${escapeHtml(platform)}</span></td><td><span class="queue-progress ${item.status === 'done' ? 'done' : ''}"><span>${progressText}</span><i class="queue-progress-track"><i style="width:${progress}%"></i></i></span></td><td><span class="status-badge ${item.status || 'pending'}">${escapeHtml(statusText(item.status))}</span></td><td><span class="queue-row-actions"><button type="button" data-action="run" title="开始任务">▷</button><button type="button" data-action="edit" title="编辑任务">⋮</button></span></td>`;
+        tr.classList.toggle('selected', isSelected);
+        tr.innerHTML = `<td><input type="checkbox" class="queue-check" ${isSelected ? 'checked' : ''} aria-label="选择任务"></td><td>${index + 1}</td><td>${escapeHtml(item.title || '未命名')}</td><td><span class="queue-platform">${platformLogo}${escapeHtml(platform)}</span></td><td><span class="queue-progress ${item.status === 'done' ? 'done' : ''}"><span>${progressText}</span><i class="queue-progress-track"><i style="width:${progress}%"></i></i></span></td><td><span class="status-badge ${item.status || 'pending'}">${escapeHtml(statusText(item.status))}</span></td><td><span class="queue-row-actions"><button type="button" data-action="run" title="开始任务">▷</button><button type="button" data-action="edit" title="编辑任务">⋮</button></span></td>`;
         tbody.appendChild(tr);
         tr.onclick = event => {
+          const checkbox = event.target.closest('.queue-check');
+          if (checkbox) {
+            if (checkbox.checked) selectedQueueIds.add(item.id);
+            else selectedQueueIds.delete(item.id);
+            tr.classList.toggle('selected', checkbox.checked);
+            updateSelectedQueueUi();
+            return;
+          }
           const action = event.target.closest('[data-action]')?.dataset.action;
           if (action) {
             event.stopPropagation();
@@ -5998,6 +6028,7 @@ INDEX_HTML = r"""<!doctype html>
       const empty = document.getElementById('coverEmpty');
       const meta = document.getElementById('coverMeta');
       if (!path) {
+        img.removeAttribute('src');
         img.style.display = 'none';
         empty.style.display = 'block';
         meta.textContent = '--';
