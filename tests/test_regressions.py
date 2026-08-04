@@ -9,14 +9,18 @@ from api_clients import _fanqie_parse_search_book, _fanqie_search_books, _matchi
 from metadata_helpers import build_output_folder_name
 from processor import load_operation_snapshot, resolve_output_folder_path, restore_operation_snapshot, save_operation_snapshot
 from docker_web import (
+    _tag_blacklist_storage_path,
     AppState,
     INDEX_HTML,
     collect_tags_and_year_from_payload,
     collect_ximalaya_app_tags,
     extract_ximalaya_release_year,
     fetch_api_metadata,
+    fetch_link_metadata,
     load_folder_config,
+    load_tag_blacklist_patterns,
     normalize_ximalaya_payload,
+    save_tag_blacklist_patterns,
 )
 
 DOCKER_WEB_SOURCE = (Path(__file__).resolve().parents[1] / "docker_web.py").read_text(encoding="utf-8")
@@ -409,6 +413,46 @@ class RegressionTests(unittest.TestCase):
         }
         self.assertEqual(fanqie_cover_url(data), "https://hd.example.com/cover.jpg")
         self.assertEqual(fanqie_release_year(data), "2022")
+
+    @patch("docker_web.fetch_fanqie_rendered_metadata", return_value={})
+    @patch("docker_web.fetch_fanqie_api_metadata_from_share_html", return_value={})
+    @patch("docker_web.parse_fanqie_share_html")
+    @patch("docker_web.fetch_share_page_html", return_value="<html></html>")
+    def test_fanqie_link_cover_is_upgraded_to_hd(self, html_mock, parse_mock, api_mock, render_mock):
+        signed_cover = (
+            "http://p6-novelfm-sign.novelfmpic.com/novel-pic/"
+            "p2od1966be4cc0083581d73b36119c66464"
+            "~tplv-y3bzr8ilui-smart-resize:220:220.jpeg?lk3s=b132c119&x-signature=fake"
+        )
+        parse_mock.return_value = {
+            "title": "\u94fe\u63a5\u6807\u9898",
+            "author": "\u4f5c\u8005",
+            "cover": signed_cover,
+            "bestCover": signed_cover,
+            "pic": signed_cover,
+        }
+        meta = fetch_link_metadata(
+            "https://m.changdunovel.com/ug/pages/book-share?book_id=123",
+            "\u756a\u8304\u7545\u542c",
+        )
+        self.assertEqual(
+            meta["cover_url"],
+            "https://p6-novelfm.novelfmpic.com/novel-pic/"
+            "p2od1966be4cc0083581d73b36119c66464"
+            "~tplv-y3bzr8ilui-resize:1080:1080.jpeg",
+        )
+
+    def test_tag_blacklist_uses_persistent_config_path(self):
+        with patch.dict("os.environ", {"PROCESS_CONFIG": "/config/process_params.json"}):
+            path = _tag_blacklist_storage_path()
+        self.assertEqual(str(path).replace("\\", "/"), "/config/tag_blacklist.txt")
+
+    def test_tag_blacklist_save_load_round_trip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "tag_blacklist.txt"
+            with patch("docker_web.TAG_BLACKLIST_PATH", path):
+                save_tag_blacklist_patterns(["\u5e7f\u544a", "\u5f15\u6d41"])
+                self.assertEqual(load_tag_blacklist_patterns(), ["\u5e7f\u544a", "\u5f15\u6d41"])
 
     @patch("api_clients._fanqie_search_by_id")
     @patch("api_clients._fanqie_get_share_info")

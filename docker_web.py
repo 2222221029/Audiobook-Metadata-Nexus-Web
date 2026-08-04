@@ -40,10 +40,35 @@ LOCAL_CONFIG_PATH = Path("docker/config/process_params.json")
 CONTAINER_DATA_PATH = Path("/data")
 LOCAL_DATA_PATH = Path("docker/data")
 RESOURCE_DIR = Path(__file__).resolve().parent
-TAG_BLACKLIST_PATH = RESOURCE_DIR / "tag_blacklist.txt"
 ICON_PATH = RESOURCE_DIR / "icon.ico"
 DESKTOP_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 WEB_AUTH_TOKEN = os.environ.get("AUDIOMETA_WEB_TOKEN", "").strip()
+
+
+def _tag_blacklist_storage_path():
+    env_config = (os.environ.get("PROCESS_CONFIG") or "").strip()
+    if env_config:
+        return Path(env_config).parent / "tag_blacklist.txt"
+    if Path("/config").is_dir():
+        return Path("/config") / "tag_blacklist.txt"
+    return RESOURCE_DIR / "tag_blacklist.txt"
+
+
+TAG_BLACKLIST_PATH = _tag_blacklist_storage_path()
+
+
+def _migrate_tag_blacklist_if_needed():
+    source = RESOURCE_DIR / "tag_blacklist.txt"
+    if TAG_BLACKLIST_PATH == source or not source.exists() or TAG_BLACKLIST_PATH.exists():
+        return
+    try:
+        TAG_BLACKLIST_PATH.parent.mkdir(parents=True, exist_ok=True)
+        TAG_BLACKLIST_PATH.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    except Exception:
+        pass
+
+
+_migrate_tag_blacklist_if_needed()
 
 API_SOURCES = ("喜马拉雅", "番茄畅听", "懒人听书", "起点听书", "酷我听书", "网易云听书", "云听fm", "蜻蜓fm")
 LINK_PLATFORMS = ("起点听书", "番茄畅听")
@@ -1046,6 +1071,10 @@ def fetch_link_metadata(url, platform):
         query = parse_qs(urlparse(url).query)
         book_id = (query.get("book_id") or query.get("bookId") or [""])[0]
         data["releaseDate"] = extract_bytedance_snowflake_year(book_id)
+    if platform == "番茄畅听" and data.get("cover"):
+        high_res_cover = fanqie_cover_url({"audio_thumb_url_hd": data.get("cover"), "thumb_url": data.get("cover")})
+        if high_res_cover:
+            data["cover"] = data["bestCover"] = data["pic"] = high_res_cover
     data["_platform"] = platform
     return normalize_metadata(data, platform)
 
