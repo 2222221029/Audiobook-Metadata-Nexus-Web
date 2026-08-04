@@ -41,6 +41,14 @@ CONTAINER_DATA_PATH = Path("/data")
 LOCAL_DATA_PATH = Path("docker/data")
 RESOURCE_DIR = Path(__file__).resolve().parent
 ICON_PATH = RESOURCE_DIR / "icon.ico"
+FAVICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.92">
+    <path d="M24 6c8.7 0 15.8 5.2 18.9 12.5-5.9-3.3-12.7-3.2-17.7.3-4.8 3.4-7 9.1-5.6 14.4C12.4 31.4 7 25 7 17.4 11.4 10.4 17 6 24 6Z" stroke="#7464f6" stroke-width="3.5"/>
+    <path d="M40.8 20.9c4.3 7.5 2.9 16.2-2.2 22-1.1-6.7-4.6-12.5-10.2-14.8-5.4-2.2-11.4-.8-15.3 3.1-1.9-7.2 1-14.9 7.5-18.7 8.3-.2 16.7 2.2 20.2 8.4Z" stroke="#8a77ff" stroke-width="3.5"/>
+    <path d="M35.9 40.8c-4.4 7.5-12.8 10.8-20.5 9.3 5.7-3.8 9.1-9.6 8.4-15.6-.7-5.8-4.7-10.3-10-11.7 5.3-5.3 13.4-6.5 19.9-2.7 4.1 7.2 5.7 15.2 2.2 20.7Z" stroke="#5e78ec" stroke-width="3.5"/>
+  </g>
+  <circle cx="24" cy="24" r="4.2" fill="#a493ff"/>
+</svg>"""
 DESKTOP_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 WEB_AUTH_TOKEN = os.environ.get("AUDIOMETA_WEB_TOKEN", "").strip()
 
@@ -1513,6 +1521,8 @@ class RequestHandler(BaseHTTPRequestHandler):
         try:
             if path == "/":
                 return text_response(self, INDEX_HTML)
+            if path == "/favicon.svg":
+                return text_response(self, FAVICON_SVG, "image/svg+xml; charset=utf-8")
             if path == "/favicon.ico":
                 return favicon_response(self)
             if path == "/api/config":
@@ -1738,7 +1748,7 @@ INDEX_HTML = r"""<!doctype html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" sizes="any" />
   <title>声境元枢 · AudioMeta Nexus</title>
   <style>
     /* ══════════════════════════════════════════════

@@ -11,6 +11,7 @@ from processor import load_operation_snapshot, resolve_output_folder_path, resto
 from docker_web import (
     _tag_blacklist_storage_path,
     AppState,
+    FAVICON_SVG,
     INDEX_HTML,
     collect_tags_and_year_from_payload,
     collect_ximalaya_app_tags,
@@ -243,6 +244,10 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("settingsIconNames", INDEX_HTML)
         self.assertIn(".settings-icon .ui-icon", INDEX_HTML)
         self.assertIn(".theme-symbol .ui-icon", INDEX_HTML)
+
+    def test_browser_favicon_matches_ui_brand(self):
+        self.assertIn('href="/favicon.svg?v=2"', INDEX_HTML)
+        self.assertIn('d="M24 6c8.7 0 15.8 5.2 18.9 12.5-5.9-3.3-12.7-3.2-17.7.3-4.8 3.4-7 9.1-5.6 14.4C12.4 31.4 7 25 7 17.4 11.4 10.4 17 6 24 6Z"', FAVICON_SVG)
 
     def test_author_and_anchor_pools_share_one_row(self):
         self.assertIn('class="people-row"', INDEX_HTML)
