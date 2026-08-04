@@ -208,6 +208,12 @@ class RegressionTests(unittest.TestCase):
         for pool_id in ("authorPool", "anchorPool", "teamPool", "seriesPool", "blacklistPool"):
             self.assertIn(pool_id, INDEX_HTML)
 
+    def test_author_and_anchor_pools_share_one_row(self):
+        self.assertIn('class="people-row"', INDEX_HTML)
+        self.assertIn('id="authorPool"', INDEX_HTML)
+        self.assertIn('id="anchorPool"', INDEX_HTML)
+        self.assertIn(".people-row .entity-row", INDEX_HTML)
+
     def test_ypshuo_author_candidates_require_exact_title_and_are_distinct(self):
         candidates = [
             {"id": "1", "novel_name": "我不是戏神", "author_name": "三九音域"},

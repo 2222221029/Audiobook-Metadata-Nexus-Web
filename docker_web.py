@@ -3324,6 +3324,19 @@ INDEX_HTML = r"""<!doctype html>
     .metadata-title-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-bottom: 14px; }
     .metadata-title-field { display: grid; grid-template-columns: 68px minmax(0, 1fr); align-items: center; gap: 10px; }
     .metadata-title-field label { margin: 0; color: #d5dce9; }
+    .people-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 11px;
+    }
+    .people-row .entity-row {
+      grid-template-columns: 58px minmax(0, 1fr) auto;
+      margin-top: 0;
+      gap: 8px;
+    }
+    .people-row .entity-hint { display: none; }
+    .people-row .field-mini-action { min-height: 44px; padding: 0 10px; font-size: 12px; white-space: nowrap; }
     .entity-row {
       display: grid;
       grid-template-columns: 68px minmax(0, 1fr) auto;
@@ -3891,10 +3904,13 @@ INDEX_HTML = r"""<!doctype html>
       .theme-symbol { display: none; }
       .topbar-separator { display: none; }
       .left, .right { width: 100%; }
-      .source-controls, .metadata-title-grid, .archive-main-grid, .archive-extra-grid { grid-template-columns: 1fr; }
+      .source-controls, .metadata-title-grid, .people-row, .archive-main-grid, .archive-extra-grid { grid-template-columns: 1fr; }
       .theme-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .source-controls > button:nth-of-type(1), .source-controls > button:nth-of-type(2) { grid-column: auto; }
       .metadata-title-field, .entity-row, .archive-main-grid > div { grid-template-columns: 1fr; }
+      .people-row { gap: 8px; }
+      .people-row .entity-row { grid-template-columns: 1fr; }
+      .people-row .entity-hint { display: block; }
       .entity-row > label, .metadata-title-field label, .archive-main-grid label { margin-bottom: 4px; }
       .entity-hint { display: none; }
       .tag-archive { grid-column: auto; }
@@ -3990,17 +4006,19 @@ INDEX_HTML = r"""<!doctype html>
             <div class="metadata-title-field"><label>专辑标题</label><input name="title" placeholder="请输入专辑标题" /></div>
             <div class="metadata-title-field"><label>副标题</label><input name="subtitle" placeholder="请输入副标题（可选）" /></div>
           </div>
-          <div class="entity-row">
-            <label>作者</label>
-            <div class="chips editable" id="authorPool"></div>
-            <button type="button" class="field-mini-action" id="fetchAuthorBtn">♧ 按书名获取作者</button>
-            <input type="hidden" name="author" />
-          </div>
-          <div class="entity-row">
-            <label>演播者</label>
-            <div class="chips editable" id="anchorPool"></div>
-            <span class="entity-hint">输入后按回车添加</span>
-            <input type="hidden" name="anchor" />
+          <div class="people-row">
+            <div class="entity-row">
+              <label>作者</label>
+              <div class="chips editable" id="authorPool"></div>
+              <button type="button" class="field-mini-action" id="fetchAuthorBtn">♧ 获取作者</button>
+              <input type="hidden" name="author" />
+            </div>
+            <div class="entity-row">
+              <label>演播者</label>
+              <div class="chips editable" id="anchorPool"></div>
+              <span class="entity-hint">输入后按回车添加</span>
+              <input type="hidden" name="anchor" />
+            </div>
           </div>
         </div>
 
