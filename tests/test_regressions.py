@@ -382,8 +382,8 @@ class RegressionTests(unittest.TestCase):
             "book_name": "\u6d4b\u8bd5\u4e66\u540d",
             "author": "\u4f5c\u8005",
             "anchor": "\u6f14\u64ad",
-            "audio_thumb_url_hd": "https://hd.example.com/cover.jpg",
-            "thumb_url": "https://thumb.example.com/cover.jpg",
+            "audio_thumb_uri": "http://p6-novelfm-sign.novelfmpic.com/novel-pic/p2od1966be4cc0083581d73b36119c66464~tplv-y3bzr8ilui-smart-resize:220:220.jpeg?lk3s=b132c119&scene=search_v2&x-expires=1786437088&x-signature=fake",
+            "thumb_url": "http://p6-novelfm-sign.novelfmpic.com/novel-pic/p2od1966be4cc0083581d73b36119c66464~tplv-y3bzr8ilui-resize:220:0.jpeg?lk3s=b132c119&scene=search_v2&x-expires=1786437088&x-signature=fake",
             "abstract": "\u7b80\u4ecb",
             "tags": [{"tag_name": "\u7384\u5e7b"}, "\u90fd\u5e02"],
             "tag_name": "\u60ac\u7591",
@@ -398,7 +398,7 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(item["tags"], ["\u7384\u5e7b", "\u90fd\u5e02", "\u60ac\u7591"])
         self.assertEqual(item["finished"], "\u5b8c\u7ed3")
         self.assertEqual(item["chapter_count"], 88)
-        self.assertEqual(item["cover"], "https://hd.example.com/cover.jpg")
+        self.assertEqual(item["cover"], "https://p6-novelfm.novelfmpic.com/novel-pic/p2od1966be4cc0083581d73b36119c66464~tplv-y3bzr8ilui-resize:1080:1080.jpeg")
         self.assertEqual(item["release_date"], "2022")
 
     def test_fanqie_link_metadata_helpers(self):
@@ -476,11 +476,13 @@ class RegressionTests(unittest.TestCase):
             "chapter_count": 12,
             "finished": "\u5b8c\u7ed3",
             "category": "\u6709\u58f0\u5c0f\u8bf4",
+            "release_date": "2024",
         }]
         results, has_next = search_platform_metadata("\u756a\u8304\u7545\u542c", "\u641c\u7d22\u6807\u9898")
         self.assertEqual(results[0]["narrator"], "\u6f14\u64ad")
         self.assertEqual(results[0]["chapter_count"], 12)
         self.assertEqual(results[0]["finished"], "\u5b8c\u7ed3")
+        self.assertEqual(results[0]["release_date"], "2024")
 
     @patch("docker_web.fanqie_api")
     def test_fetch_fanqie_metadata_uses_selected_search_result(self, fanqie_mock):
@@ -498,6 +500,7 @@ class RegressionTests(unittest.TestCase):
             "tags": ["\u6807\u7b7e"],
             "finished": "\u5b8c\u7ed3",
             "category": "\u6709\u58f0\u5c0f\u8bf4",
+            "release_date": "2023",
         })
         self.assertEqual(meta["title"], "\u641c\u7d22\u6807\u9898")
         self.assertEqual(meta["desc"], "\u641c\u7d22\u7b80\u4ecb")
@@ -505,6 +508,7 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(meta["author"], "\u641c\u7d22\u4f5c\u8005")
         self.assertEqual(meta["anchor"], "\u641c\u7d22\u6f14\u64ad")
         self.assertIn("\u6807\u7b7e", meta["tags"])
+        self.assertEqual(meta["year"], "2023")
 
     def test_fanqie_click_flow_passes_selected_search_result(self):
         self.assertIn("async function fetchMetadata(searchResult)", INDEX_HTML)

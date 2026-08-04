@@ -5671,6 +5671,7 @@ INDEX_HTML = r"""<!doctype html>
             chapter_count: item.chapter_count || 0,
             finished: item.finished || '',
             category: item.category || '',
+            release_date: item.release_date || '',
           };
           form.api_id.value = selected.id;
           closeTitleSearchResults();

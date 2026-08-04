@@ -7,6 +7,7 @@ import uuid
 import codecs
 import html
 from functools import lru_cache
+from urllib.parse import urlsplit, urlunsplit
 import requests
 from config import get_platform_cookies, FANQIE_SHARE_ID, FANQIE_X_BOGUS, FANQIE_SIGNATURE
 from network_utils import get_safe_session, _debug_log, clean_html_tags, extract_bytedance_snowflake_year
@@ -372,7 +373,24 @@ def fanqie_cover_url(data):
         if isinstance(value, list):
             value = value[0] if value else ""
         if value:
-            return str(value).strip().replace("http://", "https://")
+            url = str(value).strip()
+            if url.startswith("//"):
+                url = "https:" + url
+            try:
+                parsed = urlsplit(url)
+                host = parsed.hostname or ""
+                if "novelfmpic.com" in host and "-sign." in host:
+                    host = host.replace("-sign.", ".", 1)
+                    path = parsed.path
+                    path = re.sub(
+                        r"~tplv-y3bzr8ilui-(?:smart-)?resize:\d+:\d+(?:\.\w+)?",
+                        "~tplv-y3bzr8ilui-resize:1080:1080.jpeg",
+                        path,
+                    )
+                    url = urlunsplit(("https", host, path, "", ""))
+            except Exception:
+                pass
+            return url.replace("http://", "https://")
     return ""
 
 
@@ -829,7 +847,7 @@ def search_platform_metadata(platform: str, keyword: str, page: int = 1, limit: 
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json, text/plain, */*"}
     results = []
 
-    def add(item_id, title, author="", cover="", intro="", tags=None, narrator="", chapter_count=0, finished="", category=""):
+    def add(item_id, title, author="", cover="", intro="", tags=None, narrator="", chapter_count=0, finished="", category="", release_date=""):
         item_id, title = str(item_id or "").strip(), str(title or "").strip()
         if not item_id or not title or any(item["id"] == item_id for item in results):
             return
@@ -844,6 +862,7 @@ def search_platform_metadata(platform: str, keyword: str, page: int = 1, limit: 
             "chapter_count": chapter_count or 0,
             "finished": str(finished or "").strip(),
             "category": str(category or "").strip(),
+            "release_date": str(release_date or "").strip(),
         })
 
     if platform == "喜马拉雅":
@@ -866,6 +885,7 @@ def search_platform_metadata(platform: str, keyword: str, page: int = 1, limit: 
                 chapter_count=item["chapter_count"],
                 finished=item["finished"],
                 category=item["category"],
+                release_date=item["release_date"],
             )
     elif platform == "起点听书":
         url = "https://qdcg.qidian.com/api/search/list"
