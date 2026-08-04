@@ -4138,6 +4138,35 @@ INDEX_HTML = r"""<!doctype html>
       border-radius: 8px;
       transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
     }
+    .custom-select-value {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+    .platform-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
+      border-radius: 6px;
+      background: var(--brand-color);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      box-shadow: 0 3px 9px color-mix(in srgb, var(--brand-color) 32%, transparent);
+    }
+    .custom-select-option .platform-logo {
+      width: 20px;
+      height: 20px;
+      flex-basis: 20px;
+      border-radius: 7px;
+      font-size: 11px;
+    }
     .modal {
       border-color: color-mix(in srgb, var(--border-med) 86%, transparent);
       box-shadow: 0 26px 70px rgba(0,0,0,.28), inset 0 1px 0 color-mix(in srgb, var(--surface) 88%, transparent);
@@ -4832,6 +4861,38 @@ INDEX_HTML = r"""<!doctype html>
       }
     }
 
+    const _PLATFORM_BRANDS = {
+      '喜马拉雅': { mark: '喜', color: '#ff6b35' },
+      '番茄畅听': { mark: '番', color: '#ff4757' },
+      '懒人听书': { mark: '懒', color: '#21a366' },
+      '起点听书': { mark: '起', color: '#3574f0' },
+      '酷我听书': { mark: '酷', color: '#00b8d9' },
+      '网易云听书': { mark: '网', color: '#d43c33' },
+      '云听fm': { mark: '云', color: '#8b5cf6' },
+      '蜻蜓fm': { mark: '蜻', color: '#0f9b8e' },
+    };
+
+    function platformBrand(text) {
+      const name = String(text || '').trim();
+      return _PLATFORM_BRANDS[name] || _PLATFORM_BRANDS[name.toLowerCase()] || null;
+    }
+
+    function createPlatformLogo(brand) {
+      const logo = document.createElement('span');
+      logo.className = 'platform-logo';
+      logo.textContent = brand.mark;
+      logo.style.setProperty('--brand-color', brand.color);
+      logo.title = '';
+      return logo;
+    }
+
+    function renderCustomSelectOptionContent(option, text) {
+      option.replaceChildren();
+      const brand = platformBrand(text);
+      if (brand) option.append(createPlatformLogo(brand));
+      option.append(document.createTextNode(text));
+    }
+
     function optionList(select, values, formatter = v => ({value: v, label: v}), placeholder = '') {
       select.innerHTML = '';
       if (placeholder) {
@@ -4855,9 +4916,13 @@ INDEX_HTML = r"""<!doctype html>
       if (!trigger) return;
       const value = trigger.querySelector('.custom-select-value');
       const selected = select.options[select.selectedIndex];
-      value.textContent = selected?.textContent || '请选择';
+      const selectedText = selected?.textContent || '请选择';
+      value.replaceChildren();
+      const brand = platformBrand(selectedText);
+      if (brand) value.append(createPlatformLogo(brand));
+      value.append(document.createTextNode(selectedText));
       trigger.disabled = select.disabled;
-      trigger.title = selected?.textContent || '';
+      trigger.title = selectedText;
     }
 
     function syncAllCustomSelects() {
@@ -4927,7 +4992,7 @@ INDEX_HTML = r"""<!doctype html>
         const option = document.createElement('button');
         option.type = 'button';
         option.className = 'custom-select-option';
-        option.textContent = nativeOption.textContent;
+        renderCustomSelectOptionContent(option, nativeOption.textContent);
         option.disabled = nativeOption.disabled;
         option.tabIndex = nativeOption.selected ? 0 : -1;
         option.setAttribute('role', 'option');
@@ -5127,9 +5192,9 @@ INDEX_HTML = r"""<!doctype html>
       values.forEach((value, index) => {
         const chip = document.createElement('span');
         chip.className = 'chip colored-chip';
-        const hue = (index * 53 + (pool === authorPool ? 210 : pool === anchorPool ? 168 : pool === teamPool ? 232 : 252)) % 360;
-        chip.style.setProperty('--chip-color-a', `hsl(${hue} 74% 48%)`);
-        chip.style.setProperty('--chip-color-b', `hsl(${(hue + 28) % 360} 70% 40%)`);
+        const hue = (198 + index * 137.508) % 360;
+        chip.style.setProperty('--chip-color-a', `hsl(${hue.toFixed(1)} 58% 46%)`);
+        chip.style.setProperty('--chip-color-b', `hsl(${((hue + 22) % 360).toFixed(1)} 64% 34%)`);
         chip.style.setProperty('--chip-border', `hsl(${((hue + 10) % 360).toFixed(1)} 52% 58% / .55)`);
         chip.innerHTML = `<span>${value}</span>`;
         const btn = document.createElement('button');
@@ -6008,9 +6073,9 @@ INDEX_HTML = r"""<!doctype html>
       blacklistPatterns.forEach((pattern, index) => {
         const chip = document.createElement('span');
         chip.className = 'chip colored-chip';
-        const hue = (index * 43 + 334) % 360;
-        chip.style.setProperty('--chip-color-a', `hsl(${hue} 74% 48%)`);
-        chip.style.setProperty('--chip-color-b', `hsl(${(hue + 22) % 360} 70% 40%)`);
+        const hue = (198 + index * 137.508) % 360;
+        chip.style.setProperty('--chip-color-a', `hsl(${hue.toFixed(1)} 58% 46%)`);
+        chip.style.setProperty('--chip-color-b', `hsl(${((hue + 22) % 360).toFixed(1)} 64% 34%)`);
         chip.style.setProperty('--chip-border', `hsl(${((hue + 10) % 360).toFixed(1)} 52% 58% / .55)`);
         chip.innerHTML = `<span>${pattern}</span>`;
         chip.title = '点击删除';

@@ -210,8 +210,15 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("chip.style.setProperty('--chip-color-b'", INDEX_HTML)
         self.assertIn("chip.style.setProperty('--chip-border'", INDEX_HTML)
         self.assertIn(".chip.colored-chip", INDEX_HTML)
+        self.assertIn("const hue = (198 + index * 137.508) % 360", INDEX_HTML)
         for pool_id in ("authorPool", "anchorPool", "teamPool", "seriesPool", "blacklistPool"):
             self.assertIn(pool_id, INDEX_HTML)
+
+    def test_custom_select_supports_platform_logos(self):
+        self.assertIn("const _PLATFORM_BRANDS =", INDEX_HTML)
+        self.assertIn("function createPlatformLogo", INDEX_HTML)
+        self.assertIn(".platform-logo", INDEX_HTML)
+        self.assertIn(".custom-select-value", INDEX_HTML)
 
     def test_clear_edit_area_is_grouped_with_queue_buttons(self):
         self.assertIn('id="clearBtn"', INDEX_HTML)
