@@ -3929,6 +3929,44 @@ INDEX_HTML = r"""<!doctype html>
       outline: none;
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
     }
+    .settings-card {
+      border-color: color-mix(in srgb, var(--border-med) 88%, transparent);
+      background: linear-gradient(145deg, color-mix(in srgb, var(--surface-2) 96%, transparent), var(--surface));
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 88%, transparent), 0 10px 28px rgba(0,0,0,.08);
+    }
+    .settings-card-head strong { font-size: 14px; }
+    .settings-icon {
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 16%, transparent);
+    }
+    .settings-icon .ui-icon,
+    .topbar-icon-button .ui-icon {
+      width: 17px;
+      height: 17px;
+      flex-basis: 17px;
+    }
+    .theme-symbol .ui-icon {
+      width: 18px;
+      height: 18px;
+      flex-basis: 18px;
+    }
+    .theme-selected .ui-icon {
+      width: 13px;
+      height: 13px;
+      flex-basis: 13px;
+    }
+    .section-toggle .ui-icon {
+      width: 14px;
+      height: 14px;
+      flex-basis: 14px;
+    }
+    .settings-actions button {
+      border-radius: 8px;
+      transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+    }
+    .modal {
+      border-color: color-mix(in srgb, var(--border-med) 86%, transparent);
+      box-shadow: 0 26px 70px rgba(0,0,0,.28), inset 0 1px 0 color-mix(in srgb, var(--surface) 88%, transparent);
+    }
 
     @media (max-width: 1500px) and (min-width: 1181px) {
       .app { grid-template-columns: minmax(620px, 1.03fr) minmax(560px, .97fr); }
@@ -4492,7 +4530,9 @@ INDEX_HTML = r"""<!doctype html>
         const toggle = document.createElement('button');
         toggle.type = 'button';
         toggle.className = 'section-toggle';
-        const updateToggle = () => { toggle.textContent = section.classList.contains('mobile-expanded') ? '⌃' : '⌄'; };
+        const updateToggle = () => {
+          toggle.innerHTML = section.classList.contains('mobile-expanded') ? _UI_ICONS.chevronUp : _UI_ICONS.chevronDown;
+        };
         updateToggle();
         title.appendChild(toggle);
         title.addEventListener('click', () => {
@@ -4520,6 +4560,18 @@ INDEX_HTML = r"""<!doctype html>
       trash: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg>',
       check: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
       x: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+      palette: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a10 10 0 1 1 10-10c0 2.21-1.79 4-4 4h-2.5a2 2 0 0 0-1.42 3.42c.36.36.57.86.57 1.41A2.17 2.17 0 0 1 12.57 22H12Z"/><circle cx="7.5" cy="11.5" r="1.2"/><circle cx="11" cy="7.5" r="1.2"/><circle cx="15.5" cy="9.5" r="1.2"/></svg>',
+      database: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>',
+      sliders: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg>',
+      activity: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+      refresh: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>',
+      gear: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
+      sun: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
+      moon: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+      up: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>',
+      chevronUp: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>',
+      chevronDown: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+      save: '<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10.2z"/><path d="M17 21v-7H7v7M7 3v4h8"/></svg>',
     };
 
     function setButtonContent(button, iconName, label) {
@@ -4538,6 +4590,18 @@ INDEX_HTML = r"""<!doctype html>
       document.querySelectorAll('.section-icon').forEach((el, index) => {
         if (_UI_ICONS[sectionNames[index]]) el.innerHTML = _UI_ICONS[sectionNames[index]];
       });
+      const settingsIconNames = ['palette', 'database', 'sliders', 'activity', 'refresh'];
+      document.querySelectorAll('.settings-icon').forEach((el, index) => {
+        if (_UI_ICONS[settingsIconNames[index]]) el.innerHTML = _UI_ICONS[settingsIconNames[index]];
+      });
+      document.querySelectorAll('.theme-symbol').forEach((el, index) => {
+        el.innerHTML = _UI_ICONS[index === 0 ? 'sun' : 'moon'];
+      });
+      document.querySelectorAll('.theme-selected').forEach(el => {
+        el.innerHTML = _UI_ICONS.check;
+      });
+      const settingsBtn = document.getElementById('settingsBtn');
+      if (settingsBtn) settingsBtn.innerHTML = _UI_ICONS.gear;
       const tabIcons = { queue: 'queue', log: 'log', failed: 'failed', overview: 'overview' };
       document.querySelectorAll('.tab').forEach(btn => {
         if (tabIcons[btn.dataset.tab]) iconifyTextButton(btn, tabIcons[btn.dataset.tab]);
@@ -4555,6 +4619,16 @@ INDEX_HTML = r"""<!doctype html>
         editQueueBtn: 'check',
         removeQueueBtn: 'x',
         clearQueueBtn: 'trash',
+        closeDirBtn: 'x',
+        closeCookieBtn: 'x',
+        closeBlacklistBtn: 'x',
+        closeSeriesBtn: 'x',
+        closeSettingsBtn: 'x',
+        dirUpBtn: 'up',
+        chooseDirBtn: 'check',
+        saveSeriesBtn: 'plus',
+        saveCookieBtn: 'save',
+        saveBlacklistBtn: 'save',
       };
       for (const [id, icon] of Object.entries(buttonIcons)) {
         iconifyTextButton(document.getElementById(id), icon);
@@ -5202,7 +5276,7 @@ INDEX_HTML = r"""<!doctype html>
       if (item.status === 'processing') return toast('处理中任务不可编辑');
       fillForm(item.params || {});
       editingQueueId = item.id;
-      document.getElementById('addQueueBtn').textContent = '✓ 更新任务';
+      setButtonContent(document.getElementById('addQueueBtn'), 'check', '更新任务');
       document.querySelector('.left').scrollTo({top: 0, behavior: 'smooth'});
       toast('已载入选中任务，可在左侧修改后点击更新任务');
     }
