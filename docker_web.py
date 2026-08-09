@@ -2069,7 +2069,7 @@ a { color: var(--brand); text-decoration: none; }
 .mini-track > span { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--brand); transition: width var(--dur-3) var(--ease); }
 
 /* ---------- 主题切换簇 ---------- */
-.theme-cluster { display: flex; align-items: center; }
+.theme-cluster { position: relative; display: flex; align-items: center; }
 .icon-button {
   width: 38px; height: 38px; border-radius: var(--r-md);
   display: grid; place-items: center; flex: none;
@@ -2082,7 +2082,7 @@ a { color: var(--brand); text-decoration: none; }
 .icon-button:active { transform: translateY(1px); }
 .icon-button svg { width: 18px; height: 18px; }
 .theme-toggle { position: relative; overflow: hidden; }
-.theme-symbol { position: absolute; inset: 0; display: grid; place-items: center; transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+.theme-symbol { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
 .theme-symbol:first-child { opacity: 0; transform: rotate(-40deg) scale(.6); }
 .theme-symbol:last-child { opacity: 1; transform: rotate(0) scale(1); }
 html[data-theme="light"] .theme-symbol:first-child,

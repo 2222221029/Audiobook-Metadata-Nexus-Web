@@ -44,8 +44,12 @@ def check_ffmpeg_tools(logger) -> bool:
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             startupinfo.wShowWindow = subprocess.SW_HIDE
         try:
-            ffmpeg_result = subprocess.run([FFMPEG_PATH, "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, timeout=5, startupinfo=startupinfo)
-            ffprobe_result = subprocess.run([FFPROBE_PATH, "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, timeout=5, startupinfo=startupinfo)
+            # Containerized installs can take a little longer to cold-start (for
+            # example when the binary and its shared libraries are on a mounted
+            # layer). Keep this as a bounded probe, but avoid rejecting a healthy
+            # tool merely because the five-second desktop timeout was too strict.
+            ffmpeg_result = subprocess.run([FFMPEG_PATH, "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, timeout=20, startupinfo=startupinfo)
+            ffprobe_result = subprocess.run([FFPROBE_PATH, "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, timeout=20, startupinfo=startupinfo)
             if ffmpeg_result.returncode == 0 and ffprobe_result.returncode == 0:
                 logger.info(f"✅ FFmpeg工具验证通过\n   FFmpeg路径: {FFMPEG_PATH}\n   ffprobe路径: {FFPROBE_PATH}")
                 ffmpeg_output = ffmpeg_result.stdout.decode('utf-8', errors='ignore')
