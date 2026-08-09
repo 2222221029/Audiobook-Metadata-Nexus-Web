@@ -1,4 +1,4 @@
-# 声境元枢 AudioMeta Nexus
+# AudioMeta Nexus
 
 面向 NAS / Docker 的有声书元数据处理 Web UI。容器启动后，在浏览器打开端口即可填写配置、获取元数据、保存参数、加入队列、启动处理、查看进度与日志。
 
@@ -68,5 +68,5 @@ docker compose run --rm audiometa-nexus python docker_cli.py --config /config/pr
 
 ## 注意事项
 
-- 声境元枢会直接修改 `/data` 中的音频标签，并可能按处理规则重命名专辑文件夹。
+- AudioMeta Nexus 会直接修改 `/data` 中的音频标签，并可能按处理规则重命名专辑文件夹。
 - 首次部署建议先用一个测试专辑验证输出结果，再批量处理正式目录。

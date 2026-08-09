@@ -85,7 +85,7 @@ def validate_params(params):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="声境元枢 AudioMeta Nexus Docker 批处理入口")
+    parser = argparse.ArgumentParser(description="AudioMeta Nexus Docker 批处理入口")
     parser.add_argument("--config", default=os.environ.get("PROCESS_CONFIG", DEFAULT_CONFIG_PATH), help="process_params.json 路径")
     parser.add_argument("--input-folder", default=os.environ.get("INPUT_FOLDER"), help="覆盖配置中的音频目录")
     parser.add_argument("--verbose", action="store_true", help="输出调试日志")

@@ -1,4 +1,4 @@
-# processor.py - 声境元枢 AudioMeta Nexus
+# processor.py - AudioMeta Nexus
 import os
 import sys
 import json
@@ -69,7 +69,7 @@ def save_reader_file(folder_path: str, anchor: str, logger=None) -> bool:
 def save_process_params(folder_path: str, params: dict, clean_desc: str, desc_source: str, logger=None) -> bool:
     try:
         params_to_save = params.copy()
-        params_to_save.update({'clean_desc': clean_desc, 'desc_source': desc_source, '_saved_at': time.strftime("%Y-%m-%d %H:%M:%S"), '_tool_version': "声境元枢 AudioMeta Nexus"})
+        params_to_save.update({'clean_desc': clean_desc, 'desc_source': desc_source, '_saved_at': time.strftime("%Y-%m-%d %H:%M:%S"), '_tool_version': "AudioMeta Nexus"})
         with open(os.path.join(folder_path, "process_params.json"), 'w', encoding='utf-8') as f:
             json.dump(params_to_save, f, ensure_ascii=False, indent=2, default=str)
         if logger: logger.info(f"✅ 处理参数已保存到: process_params.json\n📋 保存的参数包括简介 (来源: {desc_source})")

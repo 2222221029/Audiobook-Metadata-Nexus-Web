@@ -33,7 +33,7 @@ from audio_core import batch_get_audio_info, find_cover, get_audio_list, get_ima
 from metadata_helpers import build_output_folder_name
 
 
-APP_TITLE = "声境元枢 AudioMeta Nexus"
+APP_TITLE = "AudioMeta Nexus"
 DEFAULT_PORT = 8787
 CONTAINER_CONFIG_PATH = Path("/config/process_params.json")
 LOCAL_CONFIG_PATH = Path("docker/config/process_params.json")
@@ -1749,10 +1749,10 @@ INDEX_HTML = r"""<!doctype html>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" sizes="any" />
-  <title>声境元枢 · AudioMeta Nexus</title>
+  <title>AudioMeta Nexus</title>
   <style>
 /* ===================================================================
-   声境元枢 · AudioMeta Nexus  —  UI v4 全新设计系统
+   AudioMeta Nexus  —  UI v4 全新设计系统
    设计语言：中性基底 + 单一品牌强调色，依赖排版/空间/层级而非特效
    =================================================================== */
 *, *::before, *::after { box-sizing: border-box; }
@@ -2769,7 +2769,7 @@ td .empty-state { padding: var(--sp-6) var(--sp-4); }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 18 0"/><path d="M3 12v3a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 2z"/><path d="M21 12v3a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2z"/><path d="M12 17v3M9 20h6"/></svg>
         </span>
         <div class="brand-text">
-          <span class="brand-title">声境元枢</span>
+          <span class="brand-title">AudioMeta Nexus</span>
           <span class="brand-sub">有声书元数据处理台</span>
         </div>
       </div>
