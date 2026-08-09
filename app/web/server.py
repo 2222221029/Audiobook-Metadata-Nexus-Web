@@ -42,12 +42,16 @@ CONTAINER_DATA_PATH = Path("/data")
 LOCAL_DATA_PATH = RESOURCE_DIR / "docker/data"
 ICON_PATH = RESOURCE_DIR / "icon.ico"
 FAVICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <g fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.92">
-    <path d="M24 6c8.7 0 15.8 5.2 18.9 12.5-5.9-3.3-12.7-3.2-17.7.3-4.8 3.4-7 9.1-5.6 14.4C12.4 31.4 7 25 7 17.4 11.4 10.4 17 6 24 6Z" stroke="#7464f6" stroke-width="3.5"/>
-    <path d="M40.8 20.9c4.3 7.5 2.9 16.2-2.2 22-1.1-6.7-4.6-12.5-10.2-14.8-5.4-2.2-11.4-.8-15.3 3.1-1.9-7.2 1-14.9 7.5-18.7 8.3-.2 16.7 2.2 20.2 8.4Z" stroke="#8a77ff" stroke-width="3.5"/>
-    <path d="M35.9 40.8c-4.4 7.5-12.8 10.8-20.5 9.3 5.7-3.8 9.1-9.6 8.4-15.6-.7-5.8-4.7-10.3-10-11.7 5.3-5.3 13.4-6.5 19.9-2.7 4.1 7.2 5.7 15.2 2.2 20.7Z" stroke="#5e78ec" stroke-width="3.5"/>
-  </g>
-  <circle cx="24" cy="24" r="4.2" fill="#a493ff"/>
+  <defs>
+    <linearGradient id="nexus-bg" x1="8" y1="6" x2="40" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4c8dff"/>
+      <stop offset="1" stop-color="#2f64d6"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="13" fill="url(#nexus-bg)"/>
+  <path d="M10.5 15.2c4.4-1.8 8.6-1.1 13.5 1.9 4.9-3 9.1-3.7 13.5-1.9v18.2c-4.7-1.7-9-1-13.5 2-4.5-3-8.8-3.7-13.5-2V15.2Z" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M24 17.2v18.1" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M28.2 25.1c1.4-4.1 2.8 4.1 4.2 0s2.8 4.1 4.2 0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>"""
 DESKTOP_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 WEB_AUTH_TOKEN = os.environ.get("AUDIOMETA_WEB_TOKEN", "").strip()
@@ -1749,7 +1753,7 @@ INDEX_HTML = r"""<!doctype html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" sizes="any" />
+  <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" sizes="any" />
   <title>AudioMeta Nexus</title>
   <style>
 /* ===================================================================
@@ -2894,7 +2898,7 @@ textarea { min-height: 104px; }
     <header class="global-topbar">
       <div class="brand">
         <span class="brand-logo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 18 0"/><path d="M3 12v3a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 2z"/><path d="M21 12v3a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2z"/><path d="M12 17v3M9 20h6"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.8c3-1.2 5.8-.7 9 1.3 3.2-2 6-2.5 9-1.3v10.1c-3.1-1.1-6-.7-9 1.3-3-2-5.9-2.4-9-1.3V7.8Z"/><path d="M12.5 9.1v10.1"/><path d="M14.8 12.9c.9-2.5 1.8 2.5 2.7 0s1.8 2.5 2.7 0"/></svg>
         </span>
         <div class="brand-text">
           <span class="brand-title">AudioMeta Nexus</span>
