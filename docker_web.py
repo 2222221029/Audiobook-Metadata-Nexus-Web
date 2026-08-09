@@ -2309,6 +2309,24 @@ select.custom-select-native {
   display: grid; place-items: center;
 }
 .cover-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
+.cover-box:hover .cover-change-button,
+.cover-box:focus-within .cover-change-button { opacity: 1; transform: translateY(0); }
+.cover-change-button {
+  position: absolute; left: 8px; right: 8px; bottom: 8px;
+  min-height: 32px; padding: 6px 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--fs-12); font-weight: 600; white-space: nowrap;
+  border: 1px solid color-mix(in srgb, var(--brand) 48%, transparent);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  color: var(--text-1);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(10px);
+  opacity: 0; transform: translateY(5px);
+  transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease), background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
+}
+.cover-change-button:hover { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.cover-change-button:focus-visible { opacity: 1; transform: translateY(0); }
 .cover-empty {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   color: var(--text-3); font-size: var(--fs-12); text-align: center; padding: var(--sp-3);
@@ -2320,7 +2338,6 @@ select.custom-select-native {
   padding: 5px 10px; background: var(--surface-2); border: 1px solid var(--border);
   border-radius: var(--r-sm); align-self: flex-start;
 }
-.cover-change-button { align-self: flex-start; }
 .visual-content-column { display: flex; flex-direction: column; gap: var(--sp-4); }
 
 /* ---------- 链接来源分组 ---------- */
@@ -2884,9 +2901,9 @@ td .empty-state { padding: var(--sp-6) var(--sp-4); }
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
                     暂无封面
                   </span>
+                  <button type="button" class="cover-change-button" id="coverChangeBtn">更换封面</button>
                 </div>
                 <div class="cover-meta" id="coverMeta">--</div>
-                <button type="button" class="btn-secondary cover-change-button" id="coverChangeBtn">更换封面</button>
                 <input type="file" id="coverFileInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
                 <input type="hidden" name="manual_cover_path" />
               </div>
