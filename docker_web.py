@@ -175,6 +175,7 @@ def build_processing_preview(params):
         "output_path": str(output_path), "output_exists": output_path.exists(),
         "conflict_strategy": params.get("conflict_strategy", "suffix"),
     }
+    return normalized
 
 def build_quality_report(params):
     params = normalize_params(params)
