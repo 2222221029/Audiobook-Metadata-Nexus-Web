@@ -2,6 +2,16 @@
 
 面向 NAS / Docker 的有声书元数据处理 Web UI。容器启动后，在浏览器打开端口即可填写配置、获取元数据、保存参数、加入队列、启动处理、查看进度与日志。
 
+## 项目结构
+
+- `app/web/`：Web 服务、API 路由和内嵌 UI。
+- `app/processing/`：音频转换、标签写入和批处理流程。
+- `app/integrations/`：第三方元数据平台与网络访问。
+- `app/core/`：配置、日志、Cookie 和通用基础设施。
+- `app/cli/`：命令行入口。
+- `scripts/`：独立诊断与抓取工具。
+- `docker_web.py`、`docker_cli.py`：兼容旧启动命令的薄入口。
+
 ## 目录约定
 
 - `/data`：挂载需要处理的有声书专辑目录。
@@ -51,7 +61,7 @@ services:
       INPUT_FOLDER: /data
       WEB_HOST: 0.0.0.0
       WEB_PORT: 8787
-    command: ["python", "docker_web.py"]
+    command: ["python", "-m", "app.web.server"]
 ```
 
 ## 命令行模式
@@ -59,7 +69,7 @@ services:
 不使用 Web UI 时，可以直接运行批处理入口：
 
 ```bash
-docker compose run --rm audiometa-nexus python docker_cli.py --config /config/process_params.json
+docker compose run --rm audiometa-nexus python -m app.cli.main --config /config/process_params.json
 ```
 
 ## FFmpeg

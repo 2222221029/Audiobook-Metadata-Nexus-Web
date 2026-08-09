@@ -9,8 +9,8 @@ import html
 from functools import lru_cache
 from urllib.parse import urlsplit, urlunsplit
 import requests
-from config import get_platform_cookies, FANQIE_SHARE_ID, FANQIE_X_BOGUS, FANQIE_SIGNATURE
-from network_utils import get_safe_session, _debug_log, clean_html_tags, extract_bytedance_snowflake_year
+from app.core.config import get_platform_cookies, FANQIE_SHARE_ID, FANQIE_X_BOGUS, FANQIE_SIGNATURE
+from app.integrations.network_utils import get_safe_session, _debug_log, clean_html_tags, extract_bytedance_snowflake_year
 
 def ximalaya_api(endpoint: str, id: str) -> dict:
     id_match = re.search(r"\d+", str(id or ""))
@@ -324,7 +324,7 @@ def _fanqie_get_share_info(book_id: str) -> dict:
         if sid: params["share_id"] = sid
         if not xb_cfg or not sig_cfg:
             try:
-                from fanqie_signature import generate_for_share_get_info
+                from app.integrations.fanqie_signature import generate_for_share_get_info
                 ua = "com.xs.fm/608 (Linux; U; Android 9; zh_CN; 2210132C; Build/PQ3A.190605.07021633;tt-ok/3.12.13.17)"
                 xb_gen, sig_gen = generate_for_share_get_info(url, dict(params), ua)
                 if xb_gen and not xb_cfg: params["X-Bogus"] = xb_cfg = xb_gen

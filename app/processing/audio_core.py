@@ -12,9 +12,9 @@ import re
 from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
-from config import FFMPEG_PATH, FFPROBE_PATH, BASE_DIR, MAX_WORKERS, SYSTEM_ENCODING
-from network_utils import get_safe_session, clean_html_tags
-from api_clients import (ximalaya_api, lanren_api, kuwo_api, fanqie_api, qidian_api, netease_ting_api, yunting_api, qingting_api)
+from app.core.config import FFMPEG_PATH, FFPROBE_PATH, BASE_DIR, MAX_WORKERS, SYSTEM_ENCODING
+from app.integrations.network_utils import get_safe_session, clean_html_tags
+from app.integrations.api_clients import (ximalaya_api, lanren_api, kuwo_api, fanqie_api, qidian_api, netease_ting_api, yunting_api, qingting_api)
 
 def replace_file_safely(source_path: str, target_path: str) -> None:
     if not os.path.exists(source_path) or os.path.getsize(source_path) <= 0:

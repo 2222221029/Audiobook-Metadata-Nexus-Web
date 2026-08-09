@@ -9,7 +9,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.ssl_ import create_urllib3_context
 import urllib3
-from config import DEFAULT_DESC, NETWORK_VERIFY_SSL, PLATFORM_VERIFY_SSL
+from app.core.config import DEFAULT_DESC, NETWORK_VERIFY_SSL, PLATFORM_VERIFY_SSL
 
 if not NETWORK_VERIFY_SSL:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

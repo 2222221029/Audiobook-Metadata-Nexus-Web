@@ -8,11 +8,11 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 import re
 import uuid
-from config import BASE_DIR, CATEGORY_MAP, DEFAULT_DESC, MAX_WORKERS
-from network_utils import fix_ssl_context, clean_html_tags
-from api_clients import ximalaya_api, lanren_api, kuwo_api, fanqie_api, qidian_api, netease_ting_api, yunting_api, qingting_api
-from audio_core import check_ffmpeg_tools, get_audio_list, batch_get_audio_info, calculate_bitrate_range, find_cover, write_tags_and_cover, replace_file_safely
-from metadata_helpers import build_output_folder_name, join_people_for_tag, split_people
+from app.core.config import BASE_DIR, CATEGORY_MAP, DEFAULT_DESC, MAX_WORKERS
+from app.integrations.network_utils import fix_ssl_context, clean_html_tags
+from app.integrations.api_clients import ximalaya_api, lanren_api, kuwo_api, fanqie_api, qidian_api, netease_ting_api, yunting_api, qingting_api
+from app.processing.audio_core import check_ffmpeg_tools, get_audio_list, batch_get_audio_info, calculate_bitrate_range, find_cover, write_tags_and_cover, replace_file_safely
+from app.processing.metadata_helpers import build_output_folder_name, join_people_for_tag, split_people
 
 def replace_converted_audio(original_path: str, converted_path: str) -> str:
     new_ext = os.path.splitext(converted_path)[1]
@@ -257,7 +257,7 @@ def process_single_audio(args):
             
         if not skip_conversion:
             try:
-                from audio_converter import convert_audio_format_and_bitrate
+                from app.processing.audio_converter import convert_audio_format_and_bitrate
                 if logger: logger.info(f"🔁 转换音频：{file_name} -> {target_format} / {target_bitrate}")
                 success, temp_final_file, err = convert_audio_format_and_bitrate(audio_file, target_format, target_bitrate, logger)
                 if not success:

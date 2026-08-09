@@ -8,7 +8,7 @@ import os
 import subprocess
 import urllib.parse
 
-_BASE = os.path.dirname(os.path.abspath(__file__))
+_BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 # 优先 X-Bogus-standalone.js，否则使用 X-Bogus.js（开源或你保存的 JS 需有 sign(query, user_agent)）
 _XBOGUS_CANDIDATES = [
     os.path.join(_BASE, "X-Bogus-standalone.js"),
@@ -204,7 +204,7 @@ def generate_for_share_get_info(
     share_id = (params.get("share_id") or "").strip()
     jssdk_cookie = ""
     try:
-        from config import FANQIE_JSSDK_COOKIE
+        from app.core.config import FANQIE_JSSDK_COOKIE
         jssdk_cookie = (FANQIE_JSSDK_COOKIE or "").strip()
     except Exception:
         pass

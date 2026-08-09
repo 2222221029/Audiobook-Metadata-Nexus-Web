@@ -3,7 +3,7 @@
 内置浏览器：用 pywebview 打开分享页 URL，加载完成后用 JS 提取书籍数据，写入 JSON 文件。
 番茄畅听：先在内置浏览器中打开用户粘贴的链接，页面加载后从 performance 取 get_info 请求 URL，再请求该 API 解析并写入 JSON。
 
-用法: python fetch_share_with_browser.py <url> <platform> <output_json_path>
+用法: python -m scripts.fetch_share_with_browser <url> <platform> <output_json_path>
   platform: qidian | fanqie
   output_json_path: 提取结果写入的 JSON 文件路径
 
@@ -265,7 +265,7 @@ def _run_fanqie_auto(share_url, output_path):
 
 def main():
     if len(sys.argv) < 4:
-        sys.stderr.write("Usage: fetch_share_with_browser.py <url> <platform> <output_json_path>\n")
+        sys.stderr.write("Usage: python -m scripts.fetch_share_with_browser <url> <platform> <output_json_path>\n")
         sys.exit(1)
     url = sys.argv[1].strip()
     platform = (sys.argv[2].strip() or "qidian").lower()

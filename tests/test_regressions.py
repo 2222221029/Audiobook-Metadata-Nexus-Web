@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from api_clients import _fanqie_parse_search_book, _fanqie_search_books, _matching_ypshuo_authors, fanqie_api, fanqie_cover_url, fanqie_release_year, search_platform_metadata
-from metadata_helpers import build_output_folder_name
-from processor import load_operation_snapshot, resolve_output_folder_path, restore_operation_snapshot, save_operation_snapshot
-from docker_web import (
+from app.integrations.api_clients import _fanqie_parse_search_book, _fanqie_search_books, _matching_ypshuo_authors, fanqie_api, fanqie_cover_url, fanqie_release_year, search_platform_metadata
+from app.processing.metadata_helpers import build_output_folder_name
+from app.processing.processor import load_operation_snapshot, resolve_output_folder_path, restore_operation_snapshot, save_operation_snapshot
+from app.web.server import (
     _tag_blacklist_storage_path,
     AppState,
     FAVICON_SVG,
@@ -24,7 +24,7 @@ from docker_web import (
     save_tag_blacklist_patterns,
 )
 
-DOCKER_WEB_SOURCE = (Path(__file__).resolve().parents[1] / "docker_web.py").read_text(encoding="utf-8")
+DOCKER_WEB_SOURCE = (Path(__file__).resolve().parents[1] / "app" / "web" / "server.py").read_text(encoding="utf-8")
 
 
 class RegressionTests(unittest.TestCase):
@@ -332,8 +332,8 @@ class RegressionTests(unittest.TestCase):
         }
         self.assertEqual(collect_ximalaya_app_tags(payload), ["灵异", "探险"])
 
-    @patch("docker_web.extract_advanced_info", return_value=(["移动端标签"], ""))
-    @patch("docker_web.ximalaya_api")
+    @patch("app.web.server.extract_advanced_info", return_value=(["移动端标签"], ""))
+    @patch("app.web.server.ximalaya_api")
     def test_ximalaya_app_tags_are_fetched_even_when_web_tags_exist(self, api_mock, advanced_mock):
         api_mock.return_value = {
             "albumPageMainInfo": {
@@ -419,10 +419,10 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(fanqie_cover_url(data), "https://hd.example.com/cover.jpg")
         self.assertEqual(fanqie_release_year(data), "2022")
 
-    @patch("docker_web.fetch_fanqie_rendered_metadata", return_value={})
-    @patch("docker_web.fetch_fanqie_api_metadata_from_share_html", return_value={})
-    @patch("docker_web.parse_fanqie_share_html")
-    @patch("docker_web.fetch_share_page_html", return_value="<html></html>")
+    @patch("app.web.server.fetch_fanqie_rendered_metadata", return_value={})
+    @patch("app.web.server.fetch_fanqie_api_metadata_from_share_html", return_value={})
+    @patch("app.web.server.parse_fanqie_share_html")
+    @patch("app.web.server.fetch_share_page_html", return_value="<html></html>")
     def test_fanqie_link_cover_is_upgraded_to_hd(self, html_mock, parse_mock, api_mock, render_mock):
         signed_cover = (
             "http://p6-novelfm-sign.novelfmpic.com/novel-pic/"
@@ -455,13 +455,13 @@ class RegressionTests(unittest.TestCase):
     def test_tag_blacklist_save_load_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "tag_blacklist.txt"
-            with patch("docker_web.TAG_BLACKLIST_PATH", path):
+            with patch("app.web.server.TAG_BLACKLIST_PATH", path):
                 save_tag_blacklist_patterns(["\u5e7f\u544a", "\u5f15\u6d41"])
                 self.assertEqual(load_tag_blacklist_patterns(), ["\u5e7f\u544a", "\u5f15\u6d41"])
 
-    @patch("api_clients._fanqie_search_by_id")
-    @patch("api_clients._fanqie_get_share_info")
-    @patch("api_clients._fanqie_plugin_detail")
+    @patch("app.integrations.api_clients._fanqie_search_by_id")
+    @patch("app.integrations.api_clients._fanqie_get_share_info")
+    @patch("app.integrations.api_clients._fanqie_plugin_detail")
     def test_fanqie_id_only_merges_detail_share_and_search(self, detail_mock, share_mock, search_mock):
         detail_mock.return_value = {
             "title": "\u8be6\u60c5\u6807\u9898",
@@ -492,7 +492,7 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("\u641c\u7d22\u6807\u7b7e", raw["tags"])
 
     def test_fanqie_search_request_uses_plugin_params(self):
-        with patch("api_clients.get_safe_session") as get_session:
+        with patch("app.integrations.api_clients.get_safe_session") as get_session:
             response = get_session.return_value.post.return_value
             response.status_code = 200
             response.json.return_value = {
@@ -512,7 +512,7 @@ class RegressionTests(unittest.TestCase):
             self.assertIn("iid", kwargs["params"])
             self.assertIn("_rticket", kwargs["params"])
 
-    @patch("api_clients._fanqie_search_books")
+    @patch("app.integrations.api_clients._fanqie_search_books")
     def test_fanqie_search_platform_metadata_keeps_plugin_fields(self, search_mock):
         search_mock.return_value = [{
             "id": "1",
@@ -533,7 +533,7 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(results[0]["finished"], "\u5b8c\u7ed3")
         self.assertEqual(results[0]["release_date"], "2024")
 
-    @patch("docker_web.fanqie_api")
+    @patch("app.web.server.fanqie_api")
     def test_fetch_fanqie_metadata_uses_selected_search_result(self, fanqie_mock):
         fanqie_mock.return_value = {
             "title": "\u540e\u53f0\u6807\u9898",

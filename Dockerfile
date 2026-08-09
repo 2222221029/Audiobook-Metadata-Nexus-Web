@@ -23,4 +23,4 @@ COPY . /app
 VOLUME ["/data", "/config"]
 EXPOSE 8787
 
-CMD ["python", "docker_web.py"]
+CMD ["python", "-m", "app.web.server"]

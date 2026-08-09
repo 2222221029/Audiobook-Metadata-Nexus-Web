@@ -3,7 +3,7 @@
 import json
 import os
 
-from network_utils import get_safe_session
+from app.integrations.network_utils import get_safe_session
 
 # 你提供的完整 URL（含签名，可能有时效）
 FULL_URL = (
@@ -14,7 +14,7 @@ FULL_URL = (
     "&_signature=_02B4Z6wo00001h52CbgAAIDBQeMCdmiXRQoedg0AAO4O4e"
 )
 
-RESPONSE_FILE = os.path.join(os.path.dirname(__file__), "响应")
+RESPONSE_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "响应")
 
 
 def main():

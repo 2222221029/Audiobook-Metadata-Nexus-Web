@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 import uuid
 import shutil
-from config import FFMPEG_PATH, SYSTEM_ENCODING
+from app.core.config import FFMPEG_PATH, SYSTEM_ENCODING
 
 # 格式对应的编解码器映射
 CODEC_MAP = {

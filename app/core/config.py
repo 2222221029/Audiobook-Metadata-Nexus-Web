@@ -9,12 +9,12 @@ from pathlib import Path
 def get_base_dir():
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
         return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
+    return str(Path(__file__).resolve().parents[2])
 
 def get_resource_dir():
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
         return sys._MEIPASS
-    return os.path.dirname(os.path.abspath(__file__))
+    return str(Path(__file__).resolve().parents[2])
 
 BASE_DIR = get_base_dir()
 RESOURCE_DIR = get_resource_dir()
@@ -93,7 +93,7 @@ DEFAULT_DESC = "暂无简介信息"
 
 _cpu_count = os.cpu_count()
 MAX_WORKERS = max(1, (_cpu_count or 1) - 1)
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) if __file__ else os.getcwd()
+SCRIPT_DIR = BASE_DIR
 
 FANQIE_SHARE_ID = os.environ.get("FANQIE_SHARE_ID", "")
 FANQIE_X_BOGUS = os.environ.get("FANQIE_X_BOGUS", "")
@@ -148,7 +148,7 @@ def get_platform_cookies():
     encrypted_path = os.path.abspath(COOKIE_ENCRYPTED_FILE)
     plain_path = os.path.abspath(COOKIE_FILE)
     try:
-        from cookie_store import read_encrypted_cookie_file, read_plain_cookie_file
+        from app.core.cookie_store import read_encrypted_cookie_file, read_plain_cookie_file
         encrypted_data = read_encrypted_cookie_file(encrypted_path, COOKIE_KEYS)
         if encrypted_data is not None:
             return encrypted_data
@@ -161,7 +161,7 @@ def set_platform_cookies(cookies_dict):
     encrypted_path = os.path.abspath(COOKIE_ENCRYPTED_FILE)
     plain_path = os.path.abspath(COOKIE_FILE)
     try:
-        from cookie_store import normalize_cookie_data, read_encrypted_cookie_file, read_plain_cookie_file, write_encrypted_cookie_file, write_plain_cookie_file
+        from app.core.cookie_store import normalize_cookie_data, read_encrypted_cookie_file, read_plain_cookie_file, write_encrypted_cookie_file, write_plain_cookie_file
         data = get_platform_cookies()
         for k in COOKIE_KEYS:
             if k in cookies_dict: data[k] = (cookies_dict.get(k) or "").strip()

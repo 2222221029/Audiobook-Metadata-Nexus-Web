@@ -19,7 +19,7 @@ services:
       WEB_HOST: 0.0.0.0
       WEB_PORT: 8787
       AUDIOMETA_WEB_TOKEN: ${AUDIOMETA_WEB_TOKEN:-}
-    command: ["python", "docker_web.py"]
+    command: ["python", "-m", "app.web.server"]
     healthcheck:
       test:
         - CMD-SHELL

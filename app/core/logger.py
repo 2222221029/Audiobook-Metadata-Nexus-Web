@@ -5,7 +5,7 @@ import queue
 import tkinter as tk
 import os
 import sys
-import config
+from app.core import config
 
 
 def _widget_color(widget, option, fallback):
