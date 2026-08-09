@@ -2155,7 +2155,7 @@ textarea { resize: vertical; min-height: 92px; line-height: var(--lh-base); }
 .input-row > input, .input-row > .custom-select { flex: 1; min-width: 0; }
 .hint { font-size: var(--fs-12); color: var(--text-3); }
 /* ---------- 按钮系统 ---------- */
-.btn, .btn-primary, .quiet-button, .btn-indigo, .btn-amber, .btn-red, .field-mini-action {
+.btn, .btn-primary, .btn-secondary, .btn-ghost, .quiet-button, .btn-indigo, .btn-amber, .btn-red, .field-mini-action {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   padding: 9px var(--sp-4);
   font-size: var(--fs-13); font-weight: 560; white-space: nowrap;
@@ -2164,7 +2164,7 @@ textarea { resize: vertical; min-height: 92px; line-height: var(--lh-base); }
   transition: all var(--dur-2) var(--ease);
   user-select: none;
 }
-.btn svg, .btn-primary svg, .quiet-button svg, .btn-indigo svg, .btn-amber svg, .btn-red svg, .field-mini-action svg { width: 16px; height: 16px; }
+.btn svg, .btn-primary svg, .btn-secondary svg, .btn-ghost svg, .quiet-button svg, .btn-indigo svg, .btn-amber svg, .btn-red svg, .field-mini-action svg { width: 16px; height: 16px; }
 .btn-primary, .btn-indigo { background: var(--brand); color: var(--brand-ink); box-shadow: var(--shadow-sm); }
 .btn-primary:hover, .btn-indigo:hover { background: var(--brand-hover); }
 .btn-primary:active, .btn-indigo:active { background: var(--brand-press); transform: translateY(1px); }
@@ -2188,7 +2188,7 @@ textarea { resize: vertical; min-height: 92px; line-height: var(--lh-base); }
   font-size: var(--fs-12);
 }
 .field-mini-action:hover { color: var(--brand); border-color: var(--brand-line); background: var(--brand-soft); }
-button:disabled, .btn:disabled, .btn-primary:disabled, .quiet-button:disabled,
+button:disabled, .btn:disabled, .btn-primary:disabled, .btn-secondary:disabled, .btn-ghost:disabled, .quiet-button:disabled,
 .btn-indigo:disabled, .btn-amber:disabled, .btn-red:disabled, .field-mini-action:disabled {
   opacity: .5; cursor: not-allowed; transform: none !important;
 }
@@ -2696,8 +2696,8 @@ td .empty-state { padding: var(--sp-6) var(--sp-4); }
 .run-actions #addQueueBtn:hover { background: color-mix(in srgb, var(--brand) 20%, transparent); }
 .run-actions #clearBtn {
   min-height: 36px;
-  border-top: 1px solid var(--border);
-  border-radius: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
   padding-top: var(--sp-3);
 }
 .panel-heading { font-size: var(--fs-13); font-weight: 620; color: var(--text-1); }
