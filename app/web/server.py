@@ -268,8 +268,19 @@ def save_tag_blacklist_patterns(patterns):
         if pattern and pattern not in cleaned:
             cleaned.append(pattern)
     TAG_BLACKLIST_PATH.parent.mkdir(parents=True, exist_ok=True)
-    TAG_BLACKLIST_PATH.write_text("\n".join(cleaned) + ("\n" if cleaned else ""), encoding="utf-8")
-    return cleaned
+    temp_path = TAG_BLACKLIST_PATH.with_name(f".{TAG_BLACKLIST_PATH.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        temp_path.write_text("\n".join(cleaned) + ("\n" if cleaned else ""), encoding="utf-8")
+        os.replace(temp_path, TAG_BLACKLIST_PATH)
+    finally:
+        try:
+            temp_path.unlink()
+        except FileNotFoundError:
+            pass
+    persisted = load_tag_blacklist_patterns()
+    if persisted != cleaned:
+        raise IOError(f"标签黑名单保存校验失败：期望 {len(cleaned)} 条，实际 {len(persisted)} 条")
+    return persisted
 
 
 def is_tag_blacklisted(tag, blacklist_patterns=None):
@@ -1636,7 +1647,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return json_response(self, {"ok": True, "cookies": get_platform_cookies()})
             if path == "/api/tag-blacklist":
                 patterns = save_tag_blacklist_patterns(payload.get("patterns", []))
-                return json_response(self, {"ok": True, "patterns": patterns, "path": str(TAG_BLACKLIST_PATH)})
+                return json_response(self, {"ok": True, "patterns": patterns, "saved_count": len(patterns), "path": str(TAG_BLACKLIST_PATH)})
             if path == "/api/run":
                 with STATE.lock:
                     if STATE.running:
@@ -2260,9 +2271,12 @@ select.custom-select-native {
 .custom-select-option.selected { background: var(--brand-soft); color: var(--brand); font-weight: 600; }
 .custom-select-option:disabled { color: var(--text-3); }
 .platform-logo {
-  width: 20px; height: 20px; border-radius: 6px; flex: none;
-  display: grid; place-items: center; font-size: var(--fs-11); font-weight: 700;
-  color: #fff; background: var(--brand-color, var(--brand));
+  width: 22px; height: 22px; border-radius: 7px; flex: none;
+  display: grid; place-items: center; overflow: hidden;
+  background: transparent;
+}
+.platform-logo svg {
+  width: 100%; height: 100%; display: block;
 }
 /* ---------- 标签 / 芯片池（统一中性配色，不使用随机彩色） ---------- */
 .chips {
@@ -2683,6 +2697,11 @@ textarea { min-height: 104px; }
 }
 .search-result-action:hover { color: var(--brand-hover); }
 .toast { border-radius: var(--r-md); }
+#blacklistPool {
+  max-height: 240px;
+  overflow-y: auto;
+  align-content: flex-start;
+}
 
 @supports not (background: color-mix(in srgb, white, black)) {
   .global-topbar { background: var(--surface); }
@@ -2917,9 +2936,10 @@ textarea { min-height: 104px; }
         </div>
       </div>
       <div class="theme-cluster" aria-label="明暗主题切换">
-        <span class="theme-symbol" aria-hidden="true"></span>
-        <button type="button" class="icon-button theme-toggle" id="themeToggleBtn" title="切换明暗主题" aria-label="切换明暗主题"></button>
-        <span class="theme-symbol" aria-hidden="true"></span>
+        <button type="button" class="icon-button theme-toggle" id="themeToggleBtn" title="切换明暗主题" aria-label="切换明暗主题">
+          <span class="theme-symbol" aria-hidden="true"></span>
+          <span class="theme-symbol" aria-hidden="true"></span>
+        </button>
       </div>
       <button type="button" class="icon-button" id="settingsBtn" title="设置中心" aria-label="打开设置中心"></button>
     </header>
@@ -3224,7 +3244,6 @@ textarea { min-height: 104px; }
       document.documentElement.setAttribute('data-theme', theme);
       const btn = document.getElementById('themeToggleBtn');
       if (btn) {
-        btn.textContent = '';
         const isLight = _LIGHT_THEMES.has(theme);
         btn.setAttribute('aria-pressed', isLight ? 'false' : 'true');
         btn.title = isLight ? '切换到墨夜' : `切换到${_THEMES[_lastLightTheme] || '素雪'}`;
@@ -3511,15 +3530,17 @@ textarea { min-height: 104px; }
       }
     }
 
+    // Brand marks are kept inline so the UI has no extra asset or runtime dependency.
+    // Platform values and all API behaviour remain unchanged.
     const _PLATFORM_BRANDS = {
-      '喜马拉雅': { mark: '喜', color: '#ff6b35' },
-      '番茄畅听': { mark: '番', color: '#ff4757' },
-      '懒人听书': { mark: '懒', color: '#21a366' },
-      '起点听书': { mark: '起', color: '#3574f0' },
-      '酷我听书': { mark: '酷', color: '#00b8d9' },
-      '网易云听书': { mark: '网', color: '#d43c33' },
-      '云听fm': { mark: '云', color: '#8b5cf6' },
-      '蜻蜓fm': { mark: '蜻', color: '#0f9b8e' },
+      '喜马拉雅': { mark: '喜', color: '#f36b3f', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#f36b3f"/><path d="M7 6.3h10v2H7zm0 3.2h10v2H7zm0 3.2h6.8v2H7z" fill="#fff"/><path d="M16.2 13.2 18 15l-3.1 3.1-1.4-1.4z" fill="#fff"/></svg>' },
+      '番茄畅听': { mark: '番', color: '#f4512c', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#f4512c"/><path d="M12 7.4c-3.5 0-5.6 2.3-5.6 5.4 0 3 2.2 4.8 5.6 4.8s5.6-1.8 5.6-4.8c0-3.1-2.1-5.4-5.6-5.4Zm0-1.6c.9 0 1.7-.7 1.9-1.5-1.2-.4-2.6-.4-3.8 0 .2.8 1 1.5 1.9 1.5Z" fill="#fff"/><path d="m12 8.3 1.4 2.2 2.6.2-2 1.7.6 2.5-2.6-1.3-2.6 1.3.6-2.5-2-1.7 2.6-.2z" fill="#f4512c"/></svg>' },
+      '懒人听书': { mark: '懒', color: '#ef7d3c', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#ef7d3c"/><path d="M5.8 12a6.2 6.2 0 0 1 12.4 0v4.2a1.7 1.7 0 0 1-1.7 1.7h-1.4v-5h2v-.9a5.1 5.1 0 0 0-10.2 0v.9h2v5H7.5a1.7 1.7 0 0 1-1.7-1.7z" fill="#fff"/><path d="M9 13h2.2v3H9zm3.8 0H15v3h-2.2z" fill="#ef7d3c"/></svg>' },
+      '起点听书': { mark: '起', color: '#3574f0', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#3574f0"/><path d="M6.5 6.5h11v2H8.6v2.1h6.2c2.1 0 3.2 1.1 3.2 3.3v1.1c0 2.1-1.1 3.2-3.2 3.2H6.5v-2h7.9c.9 0 1.4-.4 1.4-1.3v-.8c0-.9-.5-1.3-1.4-1.3H6.5z" fill="#fff"/></svg>' },
+      '酷我听书': { mark: '酷', color: '#25add0', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#25add0"/><path d="M6.5 6.5h11v2H8.7v2.1h6.6v2H8.7v2.9h8.8v2H6.5z" fill="#fff"/><path d="M15.1 10.6h2.4v2.4h-2.4z" fill="#25add0"/></svg>' },
+      '网易云听书': { mark: '网', color: '#d43c33', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#d43c33"/><path d="M7 14.9c0-1.5 1.2-2.7 2.7-2.7.4 0 .8.1 1.2.3A4.2 4.2 0 0 1 19 14.2c0 2-1.6 3.6-3.6 3.6H9.1A2.1 2.1 0 0 1 7 15.7z" fill="#fff"/><path d="M8.3 10.2c1.2-1.6 3.1-2.5 5.2-2.5 2.1 0 3.9.9 5.1 2.4" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>' },
+      '云听fm': { mark: '云', color: '#8057e8', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#8057e8"/><path d="M6.5 11.4c0-1.7 1.3-3 3-3 .7 0 1.3.2 1.8.6a3.8 3.8 0 0 1 7.2 1.7c0 1.9-1.5 3.4-3.4 3.4H9.5a3 3 0 0 1-3-2.7Z" fill="#fff"/><path d="M8 17h8" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>' },
+      '蜻蜓fm': { mark: '蜻', color: '#2e9d91', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#2e9d91"/><path d="M12 6.2c1.2 1.8 1.7 3.5 1.7 5.1 0 2.8-1.1 4.8-1.7 6.4-.6-1.6-1.7-3.6-1.7-6.4 0-1.6.5-3.3 1.7-5.1Z" fill="#fff"/><path d="M10.8 10.6c-2.9-1.8-4.8-1.7-5.7-.4 1.4 1.5 3.3 2 5.8 1.5m2.3-1.1c2.9-1.8 4.8-1.7 5.7-.4-1.4 1.5-3.3 2-5.8 1.5" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>' },
     };
 
     function platformBrand(text) {
@@ -3530,8 +3551,9 @@ textarea { min-height: 104px; }
     function createPlatformLogo(brand) {
       const logo = document.createElement('span');
       logo.className = 'platform-logo';
-      logo.textContent = brand.mark;
+      logo.innerHTML = brand.svg;
       logo.style.setProperty('--brand-color', brand.color);
+      logo.setAttribute('aria-hidden', 'true');
       logo.title = '';
       return logo;
     }
@@ -3539,7 +3561,7 @@ textarea { min-height: 104px; }
     function platformLogoHtml(text) {
       const brand = platformBrand(text);
       if (!brand) return '';
-      return `<span class="platform-logo" style="--brand-color:${brand.color}">${brand.mark}</span>`;
+      return `<span class="platform-logo" style="--brand-color:${brand.color}" aria-hidden="true">${brand.svg}</span>`;
     }
 
     function renderCustomSelectOptionContent(option, text) {
@@ -4780,18 +4802,24 @@ textarea { min-height: 104px; }
 
     function addBlacklistPatternFromInput() {
       const input = document.getElementById('blacklistInput');
-      const value = input.value.trim();
-      if (!value) return;
-      if (!blacklistPatterns.includes(value)) blacklistPatterns.push(value);
+      const values = input.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+      if (!values.length) return;
+      values.forEach(value => {
+        if (!blacklistPatterns.includes(value)) blacklistPatterns.push(value);
+      });
       input.value = '';
       renderBlacklistPatterns();
     }
 
     async function saveBlacklistPatterns() {
       const data = await api('/api/tag-blacklist', { method: 'POST', body: JSON.stringify({patterns: blacklistPatterns}) });
-      blacklistPatterns = [...(data.patterns || [])];
+      const savedPatterns = [...(data.patterns || [])];
+      if (savedPatterns.length !== blacklistPatterns.length) {
+        throw new Error(`标签黑名单保存数量不一致：界面 ${blacklistPatterns.length} 条，文件 ${savedPatterns.length} 条`);
+      }
+      blacklistPatterns = savedPatterns;
       renderBlacklistPatterns();
-      toast('标签黑名单已保存');
+      toast(`标签黑名单已保存 ${savedPatterns.length} 条`);
     }
 
     function exportLogs() {

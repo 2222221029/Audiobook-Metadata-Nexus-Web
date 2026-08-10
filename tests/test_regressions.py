@@ -459,6 +459,15 @@ class RegressionTests(unittest.TestCase):
                 save_tag_blacklist_patterns(["\u5e7f\u544a", "\u5f15\u6d41"])
                 self.assertEqual(load_tag_blacklist_patterns(), ["\u5e7f\u544a", "\u5f15\u6d41"])
 
+    def test_tag_blacklist_persists_more_than_four_patterns(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "tag_blacklist.txt"
+            patterns = [f"规则{i}" for i in range(1, 13)]
+            with patch("app.web.server.TAG_BLACKLIST_PATH", path):
+                saved = save_tag_blacklist_patterns(patterns)
+                self.assertEqual(saved, patterns)
+                self.assertEqual(load_tag_blacklist_patterns(), patterns)
+
     @patch("app.integrations.api_clients._fanqie_search_by_id")
     @patch("app.integrations.api_clients._fanqie_get_share_info")
     @patch("app.integrations.api_clients._fanqie_plugin_detail")
