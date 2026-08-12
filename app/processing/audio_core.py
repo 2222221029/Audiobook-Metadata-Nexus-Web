@@ -323,6 +323,40 @@ def convert_cover(cover_data: bytes) -> bytes:
             return output.getvalue()
     except Exception: return cover_data
 
+def download_cover(cover_url: str, logger=None, platform_key: str = None) -> bytes:
+    """Download a remote cover and normalize it to JPEG for saving/tagging."""
+    url = str(cover_url or "").strip()
+    if not url.startswith(("http://", "https://")):
+        return None
+    headers = {
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Referer": "https://novelfm.com/" if platform_key == "fanqie" else url,
+    }
+    try:
+        response = get_safe_session(platform_key=platform_key).get(
+            url, headers=headers, timeout=20, allow_redirects=True
+        )
+        if response.status_code != 200:
+            if logger:
+                logger.warning(f"⚠️ 封面下载失败：HTTP {response.status_code} ({url})")
+            return None
+        content = response.content
+        if not content:
+            if logger:
+                logger.warning(f"⚠️ 封面下载失败：服务器返回空内容 ({url})")
+            return None
+        # Do not write an HTML/error response to cover.jpg or embed it as APIC.
+        with Image.open(BytesIO(content)) as image:
+            image.verify()
+        converted = convert_cover(content)
+        with Image.open(BytesIO(converted)) as image:
+            image.verify()
+        return converted
+    except Exception as exc:
+        if logger:
+            logger.warning(f"⚠️ 封面下载或图片解析失败：{exc} ({url})")
+        return None
+
 def save_cover_to_folder(cover_data: bytes, folder: str, logger) -> None:
     try:
         with open(os.path.join(folder, "cover.jpg"), "wb") as f: f.write(cover_data)
@@ -330,7 +364,11 @@ def save_cover_to_folder(cover_data: bytes, folder: str, logger) -> None:
     except Exception as e:
         if logger: logger.error(f"❌ 保存封面失败：{str(e)}")
 
-def load_manual_cover(cover_path: str) -> bytes:
+def load_manual_cover(cover_path: str, logger=None) -> bytes:
+    cover_path = str(cover_path or "").strip()
+    if cover_path.startswith(("http://", "https://")):
+        platform_key = "fanqie" if "novelfm" in cover_path.lower() else None
+        return download_cover(cover_path, logger, platform_key)
     if not cover_path or not os.path.exists(cover_path): return None
     try:
         with open(cover_path, "rb") as f: return convert_cover(f.read())
@@ -342,7 +380,7 @@ def get_image_resolution(img_bytes: bytes) -> int:
     except: return 0
 
 def find_cover(folder: str, api_id: str = None, api_source: str = "喜马拉雅", logger=None, manual_cover_path: str = None) -> bytes:
-    manual_cover = load_manual_cover(manual_cover_path)
+    manual_cover = load_manual_cover(manual_cover_path, logger)
     if manual_cover:
         if logger: logger.info(f"✅ 使用手动选择的封面 (绝对优先级)")
         save_cover_to_folder(manual_cover, folder, logger)
@@ -365,7 +403,9 @@ def find_cover(folder: str, api_id: str = None, api_source: str = "喜马拉雅"
             if api_source == "喜马拉雅": cover_url = ximalaya_api("album", api_id).get("albumPageMainInfo", {}).get("cover")
             elif api_source == "懒人听书": cover_url = lanren_api(api_id).get("bestCover")
             elif api_source == "酷我听书": cover_url = kuwo_api(api_id).get("pic")
-            elif api_source == "番茄畅听": cover_url = fanqie_api(api_id).get("cover") or fanqie_api(api_id).get("pic") or fanqie_api(api_id).get("bestCover")
+            elif api_source == "番茄畅听":
+                album_data = fanqie_api(api_id)
+                cover_url = album_data.get("cover") or album_data.get("pic") or album_data.get("bestCover")
             elif api_source == "起点听书": cover_url = qidian_api(api_id).get("cover") or qidian_api(api_id).get("pic") or qidian_api(api_id).get("bestCover")
             elif api_source == "网易云听书": cover_url = netease_ting_api(api_id).get("cover") or netease_ting_api(api_id).get("pic") or netease_ting_api(api_id).get("bestCover")
             elif api_source == "云听fm": cover_url = yunting_api(api_id).get("cover") or yunting_api(api_id).get("pic") or yunting_api(api_id).get("bestCover")
@@ -373,8 +413,8 @@ def find_cover(folder: str, api_id: str = None, api_source: str = "喜马拉雅"
             if cover_url:
                 cover_url = f"https:{cover_url}" if cover_url.startswith("//") else cover_url
                 if not cover_url.startswith("http"): cover_url = f"https://{cover_url}" if not cover_url.startswith("/") else f"https://m.lrts.me{cover_url}"
-                resp = get_safe_session().get(cover_url, timeout=8)
-                if resp.status_code == 200: api_cover_data = convert_cover(resp.content)
+                platform_key = "fanqie" if api_source == "番茄畅听" else None
+                api_cover_data = download_cover(cover_url, logger, platform_key)
         except Exception as e:
             if logger: logger.warning(f"⚠️ {api_source}封面获取失败：{str(e)}")
 

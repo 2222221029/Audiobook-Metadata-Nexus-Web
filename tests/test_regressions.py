@@ -2,11 +2,15 @@ import json
 import re
 import tempfile
 import unittest
+from io import BytesIO
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+
+from PIL import Image
 
 from app.integrations.api_clients import _fanqie_parse_search_book, _fanqie_search_books, _matching_ypshuo_authors, fanqie_api, fanqie_cover_url, fanqie_release_year, search_platform_metadata
 from app.processing.metadata_helpers import build_output_folder_name
+from app.processing.audio_core import find_cover, load_manual_cover
 from app.processing.processor import load_operation_snapshot, resolve_output_folder_path, restore_operation_snapshot, save_operation_snapshot
 from app.web.server import (
     _tag_blacklist_storage_path,
@@ -28,6 +32,58 @@ DOCKER_WEB_SOURCE = (Path(__file__).resolve().parents[1] / "app" / "web" / "serv
 
 
 class RegressionTests(unittest.TestCase):
+    def test_web_ui_reports_release_version(self):
+        self.assertIn('class="brand-version">v1.0.1</span>', INDEX_HTML)
+
+    @staticmethod
+    def _image_bytes(image_format="PNG"):
+        output = BytesIO()
+        Image.new("RGB", (12, 12), (240, 80, 30)).save(output, format=image_format)
+        return output.getvalue()
+
+    @patch("app.processing.audio_core.get_safe_session")
+    def test_remote_manual_cover_is_downloaded_and_normalized(self, session_mock):
+        response = MagicMock(status_code=200, content=self._image_bytes("PNG"))
+        session_mock.return_value.get.return_value = response
+
+        cover = load_manual_cover(
+            "https://p6-novelfm.novelfmpic.com/cover~tplv-resize:1080:1080.jpeg"
+        )
+
+        self.assertTrue(cover.startswith(b"\xff\xd8\xff"))
+        session_mock.assert_called_once_with(platform_key="fanqie")
+        self.assertEqual(
+            session_mock.return_value.get.call_args.kwargs["headers"]["Referer"],
+            "https://novelfm.com/",
+        )
+
+    @patch("app.processing.audio_core.get_safe_session")
+    def test_remote_manual_cover_is_saved_as_cover_jpg(self, session_mock):
+        session_mock.return_value.get.return_value = MagicMock(
+            status_code=200, content=self._image_bytes("WEBP")
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            cover = find_cover(temp_dir, manual_cover_path="https://example.com/cover.webp")
+            saved = Path(temp_dir) / "cover.jpg"
+
+            self.assertEqual(saved.read_bytes(), cover)
+            self.assertTrue(cover.startswith(b"\xff\xd8\xff"))
+
+    @patch("app.processing.audio_core.get_safe_session")
+    def test_remote_manual_cover_rejects_non_image_response(self, session_mock):
+        session_mock.return_value.get.return_value = MagicMock(
+            status_code=200, content=b"<html>access denied</html>"
+        )
+        self.assertIsNone(load_manual_cover("https://example.com/cover.jpeg"))
+
+    def test_search_result_action_stays_right_aligned_without_wrapping(self):
+        self.assertIn(
+            "grid-template-columns: 52px minmax(0, 1fr) 72px;",
+            INDEX_HTML,
+        )
+        self.assertIn("justify-self: end; width: 72px; min-width: 72px;", INDEX_HTML)
+        self.assertIn(".search-result-action > span { white-space: nowrap; word-break: keep-all; }", INDEX_HTML)
+
     def test_required_metadata_fields_start_empty(self):
         self.assertIn('"category": ""', DOCKER_WEB_SOURCE)
         self.assertIn('"platform": ""', DOCKER_WEB_SOURCE)
@@ -223,7 +279,19 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("const _PLATFORM_BRANDS =", INDEX_HTML)
         self.assertIn("function createPlatformLogo", INDEX_HTML)
         self.assertIn(".platform-logo", INDEX_HTML)
+        self.assertIn("/assets/platforms/ximalaya.jpg", INDEX_HTML)
+        self.assertIn("image.src = brand.logo", INDEX_HTML)
+        self.assertNotIn("brand.svg", INDEX_HTML)
         self.assertIn(".custom-select-value", INDEX_HTML)
+        logo_dir = Path(__file__).resolve().parents[1] / "app" / "web" / "assets" / "platforms"
+        expected = {
+            "ximalaya.jpg", "fanqie.jpg", "lanren.jpg", "qidian.jpg",
+            "kuwo.png", "netease.png", "yunting.jpg", "qingting.png",
+        }
+        self.assertEqual({path.name for path in logo_dir.iterdir()}, expected)
+        for path in logo_dir.iterdir():
+            with Image.open(path) as logo:
+                self.assertEqual(logo.size, (512, 512))
 
     def test_clear_edit_area_is_grouped_with_queue_buttons(self):
         self.assertIn('id="clearBtn"', INDEX_HTML)

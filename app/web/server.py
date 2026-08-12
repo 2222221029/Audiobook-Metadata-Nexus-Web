@@ -34,7 +34,7 @@ from app.processing.metadata_helpers import build_output_folder_name
 
 
 APP_TITLE = "AudioMeta Nexus"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 DEFAULT_PORT = 8787
 RESOURCE_DIR = Path(__file__).resolve().parents[2]
 CONTAINER_CONFIG_PATH = Path("/config/process_params.json")
@@ -42,6 +42,11 @@ LOCAL_CONFIG_PATH = RESOURCE_DIR / "docker/config/process_params.json"
 CONTAINER_DATA_PATH = Path("/data")
 LOCAL_DATA_PATH = RESOURCE_DIR / "docker/data"
 ICON_PATH = RESOURCE_DIR / "icon.ico"
+PLATFORM_LOGO_DIR = Path(__file__).resolve().parent / "assets" / "platforms"
+PLATFORM_LOGO_FILES = {
+    "ximalaya.jpg", "fanqie.jpg", "lanren.jpg", "qidian.jpg",
+    "kuwo.png", "netease.png", "yunting.jpg", "qingting.png",
+}
 FAVICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
   <defs>
     <linearGradient id="nexus-bg" x1="8" y1="6" x2="40" y2="44" gradientUnits="userSpaceOnUse">
@@ -1501,6 +1506,22 @@ def favicon_response(handler):
     handler.wfile.write(data)
 
 
+def platform_logo_response(handler, filename):
+    filename = str(filename or "").strip()
+    if filename not in PLATFORM_LOGO_FILES:
+        return text_response(handler, "Not Found", "text/plain; charset=utf-8", 404)
+    logo_path = PLATFORM_LOGO_DIR / filename
+    if not logo_path.is_file():
+        return text_response(handler, "Not Found", "text/plain; charset=utf-8", 404)
+    data = logo_path.read_bytes()
+    handler.send_response(200)
+    handler.send_header("Content-Type", mimetypes.guess_type(filename)[0] or "image/png")
+    handler.send_header("Cache-Control", "public, max-age=604800, immutable")
+    handler.send_header("Content-Length", str(len(data)))
+    handler.end_headers()
+    handler.wfile.write(data)
+
+
 def read_json_body(handler):
     length = int(handler.headers.get("Content-Length", "0") or "0")
     if length <= 0:
@@ -1525,7 +1546,7 @@ def save_uploaded_cover(payload):
 
 
 class RequestHandler(BaseHTTPRequestHandler):
-    server_version = "AudioMetaNexus/1.0.0"
+    server_version = f"AudioMetaNexus/{APP_VERSION}"
 
     def log_message(self, fmt, *args):
         return
@@ -1533,6 +1554,10 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path
         query = parse_qs(urlparse(self.path).query)
+        # Browser image requests cannot attach the API token header. These
+        # immutable, bundled brand assets contain no private application data.
+        if path.startswith("/assets/platforms/"):
+            return platform_logo_response(self, path.rsplit("/", 1)[-1])
         if not authorized(self):
             return json_response(self, {"ok": False, "error": "未授权"}, 401)
         try:
@@ -2277,8 +2302,8 @@ select.custom-select-native {
   display: grid; place-items: center; overflow: hidden;
   background: transparent;
 }
-.platform-logo svg {
-  width: 100%; height: 100%; display: block;
+.platform-logo img {
+  width: 100%; height: 100%; display: block; object-fit: cover;
 }
 /* ---------- 标签 / 芯片池（统一中性配色，不使用随机彩色） ---------- */
 .chips {
@@ -2725,7 +2750,8 @@ textarea { min-height: 104px; }
 .search-dialog-close { width: 28px; height: 28px; border-radius: var(--r-sm); display: grid; place-items: center; color: var(--text-3); }
 .search-dialog-close:hover { background: var(--surface-2); color: var(--text-1); }
 .search-result {
-  width: 100%; display: flex; gap: var(--sp-3); align-items: flex-start;
+  width: 100%; display: grid; grid-template-columns: 52px minmax(0, 1fr) 72px;
+  gap: var(--sp-3); align-items: flex-start;
   padding: var(--sp-3); border-radius: var(--r-md); text-align: left;
   border: 1px solid transparent;
   transition: all var(--dur-1) var(--ease);
@@ -2748,9 +2774,11 @@ textarea { min-height: 104px; }
 .search-result-tag { font-size: var(--fs-11); padding: 1px 8px; border-radius: var(--r-pill); background: var(--brand-soft); color: var(--brand); }
 .search-result-action {
   display: inline-flex; align-items: center; justify-content: center; gap: 2px;
-  align-self: stretch; flex: 0 0 72px; margin-left: auto;
+  align-self: stretch; justify-self: end; width: 72px; min-width: 72px;
   flex-direction: column; font-size: var(--fs-12); font-weight: 600; color: var(--brand);
+  white-space: nowrap; word-break: keep-all;
 }
+.search-result-action > span { white-space: nowrap; word-break: keep-all; }
 .search-result-action svg { width: 15px; height: 15px; }
 .author-result-avatar {
   width: 44px; height: 44px; border-radius: 50%; flex: none;
@@ -2922,7 +2950,7 @@ textarea { min-height: 104px; }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.8c3-1.2 5.8-.7 9 1.3 3.2-2 6-2.5 9-1.3v10.1c-3.1-1.1-6-.7-9 1.3-3-2-5.9-2.4-9-1.3V7.8Z"/><path d="M12.5 9.1v10.1"/><path d="M14.8 12.9c.9-2.5 1.8 2.5 2.7 0s1.8 2.5 2.7 0"/></svg>
         </span>
         <div class="brand-text">
-          <span class="brand-title">AudioMeta Nexus <span class="brand-version">v1.0.0</span></span>
+          <span class="brand-title">AudioMeta Nexus <span class="brand-version">v1.0.1</span></span>
           <span class="brand-sub">有声书元数据处理台</span>
         </div>
       </div>
@@ -3532,17 +3560,17 @@ textarea { min-height: 104px; }
       }
     }
 
-    // Brand marks are kept inline so the UI has no extra asset or runtime dependency.
-    // Platform values and all API behaviour remain unchanged.
+    // Official high-resolution app icons are bundled locally so the UI remains
+    // crisp and does not depend on third-party CDNs at runtime.
     const _PLATFORM_BRANDS = {
-      '喜马拉雅': { mark: '喜', color: '#f36b3f', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#f36b3f"/><path d="M7 6.3h10v2H7zm0 3.2h10v2H7zm0 3.2h6.8v2H7z" fill="#fff"/><path d="M16.2 13.2 18 15l-3.1 3.1-1.4-1.4z" fill="#fff"/></svg>' },
-      '番茄畅听': { mark: '番', color: '#f4512c', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#f4512c"/><path d="M12 7.4c-3.5 0-5.6 2.3-5.6 5.4 0 3 2.2 4.8 5.6 4.8s5.6-1.8 5.6-4.8c0-3.1-2.1-5.4-5.6-5.4Zm0-1.6c.9 0 1.7-.7 1.9-1.5-1.2-.4-2.6-.4-3.8 0 .2.8 1 1.5 1.9 1.5Z" fill="#fff"/><path d="m12 8.3 1.4 2.2 2.6.2-2 1.7.6 2.5-2.6-1.3-2.6 1.3.6-2.5-2-1.7 2.6-.2z" fill="#f4512c"/></svg>' },
-      '懒人听书': { mark: '懒', color: '#ef7d3c', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#ef7d3c"/><path d="M5.8 12a6.2 6.2 0 0 1 12.4 0v4.2a1.7 1.7 0 0 1-1.7 1.7h-1.4v-5h2v-.9a5.1 5.1 0 0 0-10.2 0v.9h2v5H7.5a1.7 1.7 0 0 1-1.7-1.7z" fill="#fff"/><path d="M9 13h2.2v3H9zm3.8 0H15v3h-2.2z" fill="#ef7d3c"/></svg>' },
-      '起点听书': { mark: '起', color: '#3574f0', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#3574f0"/><path d="M6.5 6.5h11v2H8.6v2.1h6.2c2.1 0 3.2 1.1 3.2 3.3v1.1c0 2.1-1.1 3.2-3.2 3.2H6.5v-2h7.9c.9 0 1.4-.4 1.4-1.3v-.8c0-.9-.5-1.3-1.4-1.3H6.5z" fill="#fff"/></svg>' },
-      '酷我听书': { mark: '酷', color: '#25add0', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#25add0"/><path d="M6.5 6.5h11v2H8.7v2.1h6.6v2H8.7v2.9h8.8v2H6.5z" fill="#fff"/><path d="M15.1 10.6h2.4v2.4h-2.4z" fill="#25add0"/></svg>' },
-      '网易云听书': { mark: '网', color: '#d43c33', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#d43c33"/><path d="M7 14.9c0-1.5 1.2-2.7 2.7-2.7.4 0 .8.1 1.2.3A4.2 4.2 0 0 1 19 14.2c0 2-1.6 3.6-3.6 3.6H9.1A2.1 2.1 0 0 1 7 15.7z" fill="#fff"/><path d="M8.3 10.2c1.2-1.6 3.1-2.5 5.2-2.5 2.1 0 3.9.9 5.1 2.4" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>' },
-      '云听fm': { mark: '云', color: '#8057e8', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#8057e8"/><path d="M6.5 11.4c0-1.7 1.3-3 3-3 .7 0 1.3.2 1.8.6a3.8 3.8 0 0 1 7.2 1.7c0 1.9-1.5 3.4-3.4 3.4H9.5a3 3 0 0 1-3-2.7Z" fill="#fff"/><path d="M8 17h8" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>' },
-      '蜻蜓fm': { mark: '蜻', color: '#2e9d91', svg: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#2e9d91"/><path d="M12 6.2c1.2 1.8 1.7 3.5 1.7 5.1 0 2.8-1.1 4.8-1.7 6.4-.6-1.6-1.7-3.6-1.7-6.4 0-1.6.5-3.3 1.7-5.1Z" fill="#fff"/><path d="M10.8 10.6c-2.9-1.8-4.8-1.7-5.7-.4 1.4 1.5 3.3 2 5.8 1.5m2.3-1.1c2.9-1.8 4.8-1.7 5.7-.4-1.4 1.5-3.3 2-5.8 1.5" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>' },
+      '喜马拉雅': { logo: '/assets/platforms/ximalaya.jpg' },
+      '番茄畅听': { logo: '/assets/platforms/fanqie.jpg' },
+      '懒人听书': { logo: '/assets/platforms/lanren.jpg' },
+      '起点听书': { logo: '/assets/platforms/qidian.jpg' },
+      '酷我听书': { logo: '/assets/platforms/kuwo.png' },
+      '网易云听书': { logo: '/assets/platforms/netease.png' },
+      '云听fm': { logo: '/assets/platforms/yunting.jpg' },
+      '蜻蜓fm': { logo: '/assets/platforms/qingting.png' },
     };
 
     function platformBrand(text) {
@@ -3553,8 +3581,11 @@ textarea { min-height: 104px; }
     function createPlatformLogo(brand) {
       const logo = document.createElement('span');
       logo.className = 'platform-logo';
-      logo.innerHTML = brand.svg;
-      logo.style.setProperty('--brand-color', brand.color);
+      const image = document.createElement('img');
+      image.src = brand.logo;
+      image.alt = '';
+      image.decoding = 'async';
+      logo.append(image);
       logo.setAttribute('aria-hidden', 'true');
       logo.title = '';
       return logo;
@@ -3563,7 +3594,7 @@ textarea { min-height: 104px; }
     function platformLogoHtml(text) {
       const brand = platformBrand(text);
       if (!brand) return '';
-      return `<span class="platform-logo" style="--brand-color:${brand.color}" aria-hidden="true">${brand.svg}</span>`;
+      return `<span class="platform-logo" aria-hidden="true"><img src="${brand.logo}" alt="" decoding="async"></span>`;
     }
 
     function renderCustomSelectOptionContent(option, text) {
