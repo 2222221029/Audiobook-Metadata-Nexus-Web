@@ -33,7 +33,7 @@ DOCKER_WEB_SOURCE = (Path(__file__).resolve().parents[1] / "app" / "web" / "serv
 
 class RegressionTests(unittest.TestCase):
     def test_web_ui_reports_release_version(self):
-        self.assertIn('class="brand-version">v1.0.1</span>', INDEX_HTML)
+        self.assertIn('class="brand-version">v1.0.2</span>', INDEX_HTML)
 
     @staticmethod
     def _image_bytes(image_format="PNG"):
@@ -97,8 +97,8 @@ class RegressionTests(unittest.TestCase):
     def test_custom_publish_platform_is_supported(self):
         self.assertIn('id="customPlatformInput"', INDEX_HTML)
         self.assertIn("const CUSTOM_PLATFORM_VALUE = '__custom_platform__';", INDEX_HTML)
-        self.assertIn("label: v === CUSTOM_PLATFORM_VALUE ? '自定义平台…' : v", INDEX_HTML)
-        self.assertIn("'自定义平台…': { logo: '/assets/platforms/custom.svg' }", INDEX_HTML)
+        self.assertIn("label: v === CUSTOM_PLATFORM_VALUE ? '自定义平台' : v", INDEX_HTML)
+        self.assertIn("'自定义平台': { logo: '/assets/platforms/custom.svg' }", INDEX_HTML)
         self.assertIn("'/assets/platforms/custom.svg'", INDEX_HTML)
         self.assertIn("params.platform = customPlatformInput.value.trim();", INDEX_HTML)
         self.assertIn("syncPlatformField(params.platform || '')", INDEX_HTML)

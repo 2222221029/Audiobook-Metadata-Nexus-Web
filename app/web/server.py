@@ -34,7 +34,7 @@ from app.processing.metadata_helpers import build_output_folder_name
 
 
 APP_TITLE = "AudioMeta Nexus"
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 DEFAULT_PORT = 8787
 RESOURCE_DIR = Path(__file__).resolve().parents[2]
 CONTAINER_CONFIG_PATH = Path("/config/process_params.json")
@@ -2952,7 +2952,7 @@ textarea { min-height: 104px; }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.8c3-1.2 5.8-.7 9 1.3 3.2-2 6-2.5 9-1.3v10.1c-3.1-1.1-6-.7-9 1.3-3-2-5.9-2.4-9-1.3V7.8Z"/><path d="M12.5 9.1v10.1"/><path d="M14.8 12.9c.9-2.5 1.8 2.5 2.7 0s1.8 2.5 2.7 0"/></svg>
         </span>
         <div class="brand-text">
-          <span class="brand-title">AudioMeta Nexus <span class="brand-version">v1.0.1</span></span>
+          <span class="brand-title">AudioMeta Nexus <span class="brand-version">v1.0.2</span></span>
           <span class="brand-sub">有声书元数据处理台</span>
         </div>
       </div>
@@ -3578,12 +3578,12 @@ textarea { min-height: 104px; }
       '网易云听书': { logo: '/assets/platforms/netease.png' },
       '云听fm': { logo: '/assets/platforms/yunting.jpg' },
       '蜻蜓fm': { logo: '/assets/platforms/qingting.png' },
-      '自定义平台…': { logo: '/assets/platforms/custom.svg' },
+      '自定义平台': { logo: '/assets/platforms/custom.svg' },
     };
 
     function platformBrand(text) {
       const name = String(text || '').trim();
-      return _PLATFORM_BRANDS[name] || _PLATFORM_BRANDS[name.toLowerCase()] || (name && name !== '请选择' ? _PLATFORM_BRANDS['自定义平台…'] : null);
+      return _PLATFORM_BRANDS[name] || _PLATFORM_BRANDS[name.toLowerCase()] || (name && name !== '请选择' ? _PLATFORM_BRANDS['自定义平台'] : null);
     }
 
     function createPlatformLogo(brand) {
@@ -3846,9 +3846,9 @@ textarea { min-height: 104px; }
     async function loadOptions() {
       const { options } = await api('/api/options');
       optionList(form.api_source, options.api_sources);
-      optionList(form.platform, [...options.platforms, CUSTOM_PLATFORM_VALUE], v => ({
+      optionList(form.platform, [CUSTOM_PLATFORM_VALUE, ...options.platforms], v => ({
         value: v,
-        label: v === CUSTOM_PLATFORM_VALUE ? '自定义平台…' : v,
+        label: v === CUSTOM_PLATFORM_VALUE ? '自定义平台' : v,
       }), '请选择发布平台');
       optionList(form.category, options.categories, v => ({value: v.id, label: `${v.id} · ${v.name}`}), '请选择专辑分类');
       optionList(form.target_format, options.target_formats);
