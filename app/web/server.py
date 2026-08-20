@@ -45,7 +45,7 @@ ICON_PATH = RESOURCE_DIR / "icon.ico"
 PLATFORM_LOGO_DIR = Path(__file__).resolve().parent / "assets" / "platforms"
 PLATFORM_LOGO_FILES = {
     "ximalaya.jpg", "fanqie.jpg", "lanren.jpg", "qidian.jpg",
-    "kuwo.png", "netease.png", "yunting.jpg", "qingting.png",
+    "kuwo.png", "netease.png", "yunting.jpg", "qingting.png", "custom.svg",
 }
 FAVICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
   <defs>
@@ -3578,11 +3578,12 @@ textarea { min-height: 104px; }
       '网易云听书': { logo: '/assets/platforms/netease.png' },
       '云听fm': { logo: '/assets/platforms/yunting.jpg' },
       '蜻蜓fm': { logo: '/assets/platforms/qingting.png' },
+      '自定义平台…': { logo: '/assets/platforms/custom.svg' },
     };
 
     function platformBrand(text) {
       const name = String(text || '').trim();
-      return _PLATFORM_BRANDS[name] || _PLATFORM_BRANDS[name.toLowerCase()] || null;
+      return _PLATFORM_BRANDS[name] || _PLATFORM_BRANDS[name.toLowerCase()] || (name && name !== '请选择' ? _PLATFORM_BRANDS['自定义平台…'] : null);
     }
 
     function createPlatformLogo(brand) {

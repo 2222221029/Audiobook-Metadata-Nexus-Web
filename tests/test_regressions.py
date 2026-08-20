@@ -98,6 +98,8 @@ class RegressionTests(unittest.TestCase):
         self.assertIn('id="customPlatformInput"', INDEX_HTML)
         self.assertIn("const CUSTOM_PLATFORM_VALUE = '__custom_platform__';", INDEX_HTML)
         self.assertIn("label: v === CUSTOM_PLATFORM_VALUE ? '自定义平台…' : v", INDEX_HTML)
+        self.assertIn("'自定义平台…': { logo: '/assets/platforms/custom.svg' }", INDEX_HTML)
+        self.assertIn("'/assets/platforms/custom.svg'", INDEX_HTML)
         self.assertIn("params.platform = customPlatformInput.value.trim();", INDEX_HTML)
         self.assertIn("syncPlatformField(params.platform || '')", INDEX_HTML)
 
@@ -287,10 +289,13 @@ class RegressionTests(unittest.TestCase):
         logo_dir = Path(__file__).resolve().parents[1] / "app" / "web" / "assets" / "platforms"
         expected = {
             "ximalaya.jpg", "fanqie.jpg", "lanren.jpg", "qidian.jpg",
-            "kuwo.png", "netease.png", "yunting.jpg", "qingting.png",
+            "kuwo.png", "netease.png", "yunting.jpg", "qingting.png", "custom.svg",
         }
         self.assertEqual({path.name for path in logo_dir.iterdir()}, expected)
         for path in logo_dir.iterdir():
+            if path.suffix == ".svg":
+                self.assertIn("<svg", path.read_text(encoding="utf-8"))
+                continue
             with Image.open(path) as logo:
                 self.assertEqual(logo.size, (512, 512))
 
