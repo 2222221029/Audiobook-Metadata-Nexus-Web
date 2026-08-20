@@ -2810,6 +2810,8 @@ textarea { min-height: 104px; }
 .req { color: var(--text-3); font-weight: 400; font-size: var(--fs-12); }
 .req-mark { color: var(--danger); font-weight: 600; margin-left: 1px; }
 .field-hint { font-size: var(--fs-12); color: var(--text-3); }
+.custom-platform-input { margin-top: 8px; }
+.custom-platform-hint { display: block; margin-top: 4px; }
 .field-row-actions { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
 .input-row { display: flex; gap: var(--sp-2); align-items: stretch; }
 .input-row > input { flex: 1; min-width: 0; }
@@ -3027,7 +3029,12 @@ textarea { min-height: 104px; }
           <div class="section">
             <div class="section-title"><span class="section-icon" aria-hidden="true"></span><h2>规格与归档</h2><span class="section-hint">发布信息、格式与系列</span></div>
             <div class="field-grid">
-              <div class="field"><label class="field-label">发布平台 <span class="req-mark">*</span></label><select name="platform" aria-label="发布平台"></select></div>
+              <div class="field">
+                <label class="field-label">发布平台 <span class="req-mark">*</span></label>
+                <select name="platform" aria-label="发布平台"></select>
+                <input id="customPlatformInput" class="custom-platform-input" aria-label="自定义发布平台" placeholder="请输入自定义平台名称" hidden />
+                <span class="field-hint custom-platform-hint" id="customPlatformHint" hidden>手动刮削时，填写来源平台名称即可</span>
+              </div>
               <div class="field"><label class="field-label">专辑分类 <span class="req-mark">*</span></label><select name="category" aria-label="专辑分类"></select></div>
               <div class="field"><label class="field-label">专辑状态 <span class="req-mark">*</span></label><select name="finished" aria-label="专辑状态"></select></div>
               <div class="field"><label class="field-label" for="f_year">发布年份 <span class="req-mark">*</span></label><input id="f_year" name="year" placeholder="例如 2024" /></div>
@@ -3622,6 +3629,36 @@ textarea { min-height: 104px; }
       select._customSelectSync?.();
     }
 
+    const CUSTOM_PLATFORM_VALUE = '__custom_platform__';
+    const customPlatformInput = document.getElementById('customPlatformInput');
+    const customPlatformHint = document.getElementById('customPlatformHint');
+
+    function setCustomPlatformVisible(visible) {
+      customPlatformInput.hidden = !visible;
+      customPlatformHint.hidden = !visible;
+      customPlatformInput.required = visible;
+      if (visible) customPlatformInput.focus();
+    }
+
+    function syncPlatformField(value) {
+      const platform = String(value || '').trim();
+      const known = [...form.platform.options].some(option => option.value === platform);
+      if (platform && !known) {
+        form.platform.value = CUSTOM_PLATFORM_VALUE;
+        customPlatformInput.value = platform;
+        setCustomPlatformVisible(true);
+      } else if (platform) {
+        form.platform.value = platform;
+        customPlatformInput.value = '';
+        setCustomPlatformVisible(false);
+      } else {
+        form.platform.value = '';
+        customPlatformInput.value = '';
+        setCustomPlatformVisible(false);
+      }
+      form.platform._customSelectSync?.();
+    }
+
     function syncCustomSelect(select) {
       const trigger = select?._customSelectTrigger;
       if (!trigger) return;
@@ -3808,12 +3845,20 @@ textarea { min-height: 104px; }
     async function loadOptions() {
       const { options } = await api('/api/options');
       optionList(form.api_source, options.api_sources);
-      optionList(form.platform, options.platforms, v => ({value: v, label: v}), '请选择发布平台');
+      optionList(form.platform, [...options.platforms, CUSTOM_PLATFORM_VALUE], v => ({
+        value: v,
+        label: v === CUSTOM_PLATFORM_VALUE ? '自定义平台…' : v,
+      }), '请选择发布平台');
       optionList(form.category, options.categories, v => ({value: v.id, label: `${v.id} · ${v.name}`}), '请选择专辑分类');
       optionList(form.target_format, options.target_formats);
       optionList(form.bitrate, options.bitrates);
       optionList(form.finished, options.finished, v => ({value: v, label: v}), '请选择专辑状态');
       browseCurrent = options.data_root;
+      form.platform.addEventListener('change', () => {
+        const isCustom = form.platform.value === CUSTOM_PLATFORM_VALUE;
+        setCustomPlatformVisible(isCustom);
+        if (!isCustom) customPlatformInput.value = '';
+      });
     }
 
     function splitPeople(text) {
@@ -3857,6 +3902,9 @@ textarea { min-height: 104px; }
       params.debug = true;
       params.album_tags = [...tags];
       params.fetched_metadata = currentRawMetadata || {};
+      if (form.platform.value === CUSTOM_PLATFORM_VALUE) {
+        params.platform = customPlatformInput.value.trim();
+      }
       return params;
     }
 
@@ -3868,6 +3916,7 @@ textarea { min-height: 104px; }
         if (el.type === 'checkbox') el.checked = !!value;
         else el.value = value ?? '';
       }
+      syncPlatformField(params.platform || '');
       authors = splitPeople(params.author || '');
       anchors = splitPeople(params.anchor || '');
       teams = splitPeople(params.team || '').slice(0, 1);
@@ -4097,7 +4146,7 @@ textarea { min-height: 104px; }
       if (meta.year) form.year.value = meta.year;
       if (meta.finished) form.finished.value = meta.finished;
       if (meta.category) form.category.value = meta.category;
-      if (meta.platform) form.platform.value = meta.platform;
+      if (meta.platform) syncPlatformField(meta.platform);
       if (meta.desc) form.manual_desc.value = meta.desc;
       if (meta.cover_url) form.manual_cover_path.value = meta.cover_url;
       for (const tag of meta.tags || []) if (tag && !tags.includes(tag)) tags.push(tag);

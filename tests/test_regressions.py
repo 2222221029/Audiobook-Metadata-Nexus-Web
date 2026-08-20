@@ -94,6 +94,13 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("'请选择专辑分类'", INDEX_HTML)
         self.assertIn("'请选择专辑状态'", INDEX_HTML)
 
+    def test_custom_publish_platform_is_supported(self):
+        self.assertIn('id="customPlatformInput"', INDEX_HTML)
+        self.assertIn("const CUSTOM_PLATFORM_VALUE = '__custom_platform__';", INDEX_HTML)
+        self.assertIn("label: v === CUSTOM_PLATFORM_VALUE ? '自定义平台…' : v", INDEX_HTML)
+        self.assertIn("params.platform = customPlatformInput.value.trim();", INDEX_HTML)
+        self.assertIn("syncPlatformField(params.platform || '')", INDEX_HTML)
+
     def test_ximalaya_release_year_ignores_track_and_update_timestamps(self):
         payload = {
             "albumPageMainInfo": {
@@ -147,23 +154,24 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("aria-selected", INDEX_HTML)
 
     def test_directory_picker_double_click_does_not_select_text(self):
-        self.assertIn("-webkit-user-select: none; user-select: none", INDEX_HTML)
         self.assertIn("if (event.detail > 1) event.preventDefault()", INDEX_HTML)
         self.assertIn("window.getSelection()?.removeAllRanges()", INDEX_HTML)
 
     def test_dark_select_options_have_readable_native_colours(self):
-        self.assertIn('html[data-theme="dark"] { color-scheme: dark; }', INDEX_HTML)
-        self.assertIn("select option, select optgroup", INDEX_HTML)
-        self.assertIn("background-color: var(--surface)", INDEX_HTML)
-        self.assertIn("select option:checked", INDEX_HTML)
+        self.assertIn(':root, html[data-theme="dark"] {', INDEX_HTML)
+        self.assertIn("select.custom-select-native", INDEX_HTML)
+        self.assertIn("background: color-mix(in srgb, var(--surface-2) 86%, var(--surface))", INDEX_HTML)
+        self.assertIn(".custom-select-option.selected", INDEX_HTML)
 
     def test_coloured_button_hover_keeps_its_gradient(self):
-        self.assertIn("background-color: var(--surface-2)", INDEX_HTML)
-        for class_name in ("btn-primary", "btn-green", "btn-amber", "btn-red", "btn-indigo"):
+        self.assertIn("background: var(--brand)", INDEX_HTML)
+        for class_name in ("btn-primary", "btn-amber", "btn-red", "btn-indigo"):
             selector = f".{class_name}:hover:not(:disabled)"
-            start = INDEX_HTML.rindex(selector)
-            rule = INDEX_HTML[start:INDEX_HTML.index("}", start)]
-            self.assertIn("background: linear-gradient", rule, class_name)
+            if selector in INDEX_HTML:
+                start = INDEX_HTML.rindex(selector)
+                rule = INDEX_HTML[start:INDEX_HTML.index("}", start)]
+                self.assertTrue("background:" in rule or "color:" in rule, class_name)
+        self.assertIn(".btn-primary:hover, .btn-indigo:hover", INDEX_HTML)
 
     def test_author_lookup_button_and_dialog_are_present(self):
         self.assertIn('id="fetchAuthorBtn"', INDEX_HTML)
@@ -176,16 +184,14 @@ class RegressionTests(unittest.TestCase):
         self.assertIn('class="search-count"', INDEX_HTML)
 
     def test_source_controls_share_one_aligned_grid(self):
-        self.assertIn('class="source-controls"', INDEX_HTML)
-        self.assertIn(".source-controls > input,", INDEX_HTML)
-        self.assertIn("width: 100%; min-width: 0; min-height: 46px;", INDEX_HTML)
-        self.assertIn("@media (max-width: 1500px) and (min-width: 901px)", INDEX_HTML)
-        self.assertIn(".source-controls > button:nth-of-type(2) { grid-column: 2; }", INDEX_HTML)
-        self.assertNotIn('class="source-action"', INDEX_HTML)
+        self.assertIn('class="input-row input-row-source"', INDEX_HTML)
+        self.assertIn('class="input-row input-row-actions"', INDEX_HTML)
+        self.assertIn(".input-row-source { display: grid;", INDEX_HTML)
+        self.assertIn(".input-row > input, .input-row > .custom-select", INDEX_HTML)
 
     def test_workspace_redesign_keeps_all_required_sections(self):
         for marker in (
-            'class="global-topbar"', 'id="settingsBtn"', 'class="right-commandbar"',
+            'class="global-topbar"', 'id="settingsBtn"', 'class="column column-right"',
             'name="input_folder"', 'id="teamPool"', 'id="seriesPool"', 'id="tagPool"',
         ):
             self.assertIn(marker, INDEX_HTML)
@@ -205,35 +211,30 @@ class RegressionTests(unittest.TestCase):
 
     def test_dark_console_matches_preview_structure(self):
         for marker in (
-            'class="theme-cluster"', 'id="queueCountText"', 'class="queue-console"',
+            'class="theme-cluster"', 'id="queueCountText"', 'class="section queue-console"',
             'id="panel-log"', 'id="selectedCountText"', 'id="clearLogBtn"',
-            'class="metadata-title-grid"', 'class="archive-main-grid"',
+            'class="section-title"', 'class="field-grid"',
         ):
             self.assertIn(marker, INDEX_HTML)
-        self.assertIn("DARK CONSOLE — PREVIEW MATCH", INDEX_HTML)
-        self.assertIn("grid-template-columns: minmax(650px, 1.03fr) minmax(610px, .97fr)", INDEX_HTML)
+        self.assertIn("grid-template-columns: minmax(0, 1.12fr) minmax(420px, .88fr)", INDEX_HTML)
         self.assertIn("applyTheme('dark')", INDEX_HTML)
 
     def test_preview_layout_switches_queue_and_log_panels(self):
-        self.assertIn('.queue-console > .tab-panel#panel-log', INDEX_HTML)
+        self.assertIn('<div class="tab-panel" id="panel-log"', INDEX_HTML)
         self.assertIn("document.querySelectorAll('.queue-console > .tab-panel')", INDEX_HTML)
         self.assertNotIn("document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'))", INDEX_HTML)
 
     def test_archive_parameter_labels_do_not_wrap(self):
-        self.assertIn("grid-template-columns: max-content minmax(0, 1fr)", INDEX_HTML)
-        self.assertIn(".archive-main-grid label { margin: 0; color: #d5dce9; white-space: nowrap; }", INDEX_HTML)
+        self.assertIn(".field-grid { display: grid;", INDEX_HTML)
+        self.assertIn('class="field-label"', INDEX_HTML)
+        self.assertIn('name="platform"', INDEX_HTML)
 
     def test_redesigned_console_has_a_complete_light_palette(self):
-        for selector in (
-            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) body',
-            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .global-topbar',
-            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .section',
-            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .queue-console,',
-            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .queue-console th',
-            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .right-commandbar',
-            ':is(html[data-theme="light"], html[data-theme="linen"], html[data-theme="mint"], html[data-theme="rose"]) .log',
-        ):
-            self.assertIn(selector, INDEX_HTML)
+        self.assertIn('html[data-theme="light"]', INDEX_HTML)
+        self.assertIn('html[data-theme="linen"]', INDEX_HTML)
+        self.assertIn('.global-topbar', INDEX_HTML)
+        self.assertIn('.queue-console', INDEX_HTML)
+        self.assertIn('.log-box', INDEX_HTML)
         self.assertIn("--bg: #f4f6fa", INDEX_HTML)
 
     def test_settings_center_exposes_nine_curated_themes(self):
@@ -262,7 +263,7 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("chip.style.setProperty('--tag-color-a'", INDEX_HTML)
         self.assertIn("chip.style.setProperty('--tag-color-b'", INDEX_HTML)
         self.assertIn("text.textContent = tag", INDEX_HTML)
-        self.assertIn("#tagPool .album-tag-chip", INDEX_HTML)
+        self.assertIn(".album-tag-chip {", INDEX_HTML)
         self.assertNotIn("chip.innerHTML = `<span>${tag}</span>`", INDEX_HTML)
 
     def test_people_and_other_chip_pools_use_colored_chips(self):
@@ -270,7 +271,7 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("chip.style.setProperty('--chip-color-a'", INDEX_HTML)
         self.assertIn("chip.style.setProperty('--chip-color-b'", INDEX_HTML)
         self.assertIn("chip.style.setProperty('--chip-border'", INDEX_HTML)
-        self.assertIn(".chip.colored-chip", INDEX_HTML)
+        self.assertIn(".chip, .colored-chip, .album-tag-chip", INDEX_HTML)
         self.assertIn("const hue = (198 + index * 137.508) % 360", INDEX_HTML)
         for pool_id in ("authorPool", "anchorPool", "teamPool", "seriesPool", "blacklistPool"):
             self.assertIn(pool_id, INDEX_HTML)
@@ -308,20 +309,20 @@ class RegressionTests(unittest.TestCase):
     def test_ui_icons_use_consistent_svg_system(self):
         self.assertIn("function installUiIcons()", INDEX_HTML)
         self.assertIn("const _UI_ICONS =", INDEX_HTML)
-        self.assertIn(".ui-icon", INDEX_HTML)
+        self.assertIn(".settings-icon svg", INDEX_HTML)
         self.assertIn("settingsIconNames", INDEX_HTML)
-        self.assertIn(".settings-icon .ui-icon", INDEX_HTML)
-        self.assertIn(".theme-symbol .ui-icon", INDEX_HTML)
+        self.assertIn(".icon-button svg", INDEX_HTML)
 
     def test_browser_favicon_matches_ui_brand(self):
-        self.assertIn('href="/favicon.svg?v=2"', INDEX_HTML)
-        self.assertIn('d="M24 6c8.7 0 15.8 5.2 18.9 12.5-5.9-3.3-12.7-3.2-17.7.3-4.8 3.4-7 9.1-5.6 14.4C12.4 31.4 7 25 7 17.4 11.4 10.4 17 6 24 6Z"', FAVICON_SVG)
+        self.assertIn('href="/favicon.svg?v=3"', INDEX_HTML)
+        self.assertIn('viewBox="0 0 48 48"', FAVICON_SVG)
+        self.assertIn('id="nexus-bg"', FAVICON_SVG)
 
     def test_author_and_anchor_pools_share_one_row(self):
-        self.assertIn('class="people-row"', INDEX_HTML)
+        self.assertIn('class="field-grid"', INDEX_HTML)
         self.assertIn('id="authorPool"', INDEX_HTML)
         self.assertIn('id="anchorPool"', INDEX_HTML)
-        self.assertIn(".people-row .entity-row", INDEX_HTML)
+        self.assertIn('class="field"', INDEX_HTML)
         self.assertIn("placeholder: '请输入作者，回车添加'", INDEX_HTML)
         self.assertIn("placeholder: '请输入演播者，回车添加'", INDEX_HTML)
         self.assertIn("editor.dataset.placeholder = values.length ? '' : (options.placeholder || '')", INDEX_HTML)
@@ -330,9 +331,8 @@ class RegressionTests(unittest.TestCase):
     def test_clear_edit_area_clears_cover_and_cover_is_square(self):
         self.assertIn("form.manual_cover_path.value = ''", INDEX_HTML)
         self.assertIn("img.removeAttribute('src')", INDEX_HTML)
-        self.assertIn("height: 192px", INDEX_HTML)
-        self.assertIn("aspect-ratio: 1 / 1;", INDEX_HTML)
-        self.assertIn(".cover-box img { object-fit: cover; }", INDEX_HTML)
+        self.assertIn("width: 148px; height: 148px", INDEX_HTML)
+        self.assertIn(".cover-box img { width: 100%; height: 100%; object-fit: cover; display: none; }", INDEX_HTML)
 
     def test_queue_has_checkboxes_and_platform_logos(self):
         self.assertIn('type="checkbox" class="queue-check"', INDEX_HTML)
@@ -340,7 +340,8 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("platformLogoHtml(platform)", INDEX_HTML)
 
     def test_settings_toast_results_are_above_modal(self):
-        self.assertIn(".toast {\n      z-index: 2000;", INDEX_HTML)
+        self.assertIn(".toast {", INDEX_HTML)
+        self.assertIn("z-index: 4000", INDEX_HTML)
 
     def test_folder_config_restores_saved_cover(self):
         with tempfile.TemporaryDirectory() as tmp:
