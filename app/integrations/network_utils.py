@@ -232,8 +232,13 @@ def clean_html_tags(text: str) -> str:
     text = re.sub(r'<div.*?>', '\n', text, flags=re.IGNORECASE)
     text = re.sub(r'</div>', '\n', text, flags=re.I)
     text = re.sub(r'<[^>]+>', '', text)
-    text = re.sub(r'\n\s+', '\n', text)
-    text = re.sub(r'\n+', '\n', text).strip()
+    # Keep paragraph boundaries intact while removing indentation. The ad
+    # filters below use blank lines to limit removal to one paragraph; using
+    # `\s+` here would also consume those newlines and could delete the rest
+    # of an otherwise valid description.
+    text = re.sub(r'[ \t\f\v]+', ' ', text)
+    text = re.sub(r'\n[ \t]+', '\n', text)
+    text = re.sub(r'\n{3,}', '\n\n', text).strip()
     text = filter_ad_content(text)
     return text if text else DEFAULT_DESC
 
@@ -241,7 +246,7 @@ def filter_ad_content(text: str) -> str:
     if not text: return ""
     ad_patterns = [
         r'上新福利[\s\S]*?(?=\n\n|$)', r'【评论有礼】[\s\S]*?(?=\n\n|【|$)', r'【播放有礼】[\s\S]*?(?=\n\n|【|$)',
-        r'【*购买须知[\s\S]+$', r'订阅\+推荐\+\d+字以上[\s\S]*?(?=\n\n|$)', r'专辑好评满\d+[\s\S]*?(?=\n\n|$)',
+        r'【*购买须知[\s\S]+$', r'订阅\+[\s\S]*?\+\d+字以上[\s\S]*?(?=\n\n|$)', r'专辑好评满\d+[\s\S]*?(?=\n\n|$)',
         r'播放量破\d+w[\s\S]*?(?=\n\n|$)', r'抽\d+位用户[\s\S]*?(?=\n\n|$)', r'喜马月卡[\s\S]*?(?=\n\n|$)',
         r'深夜小茶馆周边[\s\S]*?(?=\n\n|$)', r'即日起截至[\d月日]+[\s\S]*?(?=\n\n|$)',
     ]

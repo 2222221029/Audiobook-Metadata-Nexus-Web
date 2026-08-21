@@ -34,7 +34,7 @@ from app.processing.metadata_helpers import build_output_folder_name
 
 
 APP_TITLE = "AudioMeta Nexus"
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.3"
 DEFAULT_PORT = 8787
 RESOURCE_DIR = Path(__file__).resolve().parents[2]
 CONTAINER_CONFIG_PATH = Path("/config/process_params.json")
@@ -2952,7 +2952,7 @@ textarea { min-height: 104px; }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.8c3-1.2 5.8-.7 9 1.3 3.2-2 6-2.5 9-1.3v10.1c-3.1-1.1-6-.7-9 1.3-3-2-5.9-2.4-9-1.3V7.8Z"/><path d="M12.5 9.1v10.1"/><path d="M14.8 12.9c.9-2.5 1.8 2.5 2.7 0s1.8 2.5 2.7 0"/></svg>
         </span>
         <div class="brand-text">
-          <span class="brand-title">AudioMeta Nexus <span class="brand-version">v1.0.2</span></span>
+          <span class="brand-title">AudioMeta Nexus <span class="brand-version">v1.0.3</span></span>
           <span class="brand-sub">有声书元数据处理台</span>
         </div>
       </div>

@@ -12,6 +12,7 @@ from app.integrations.api_clients import _fanqie_parse_search_book, _fanqie_sear
 from app.processing.metadata_helpers import build_output_folder_name
 from app.processing.audio_core import find_cover, load_manual_cover
 from app.processing.processor import load_operation_snapshot, resolve_output_folder_path, restore_operation_snapshot, save_operation_snapshot
+from app.integrations.network_utils import clean_html_tags
 from app.web.server import (
     _tag_blacklist_storage_path,
     AppState,
@@ -33,7 +34,7 @@ DOCKER_WEB_SOURCE = (Path(__file__).resolve().parents[1] / "app" / "web" / "serv
 
 class RegressionTests(unittest.TestCase):
     def test_web_ui_reports_release_version(self):
-        self.assertIn('class="brand-version">v1.0.2</span>', INDEX_HTML)
+        self.assertIn('class="brand-version">v1.0.3</span>', INDEX_HTML)
 
     @staticmethod
     def _image_bytes(image_format="PNG"):
@@ -102,6 +103,16 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("'/assets/platforms/custom.svg'", INDEX_HTML)
         self.assertIn("params.platform = customPlatformInput.value.trim();", INDEX_HTML)
         self.assertIn("syncPlatformField(params.platform || '')", INDEX_HTML)
+
+    def test_description_ad_filter_keeps_following_paragraphs(self):
+        html = (
+            "<p>订阅+专辑评论区打满分+20字以上评论，专辑播放量达到200万、300万、500万分别抽奖。</p>"
+            "<p>这是专辑的正式文字简介，应该保留下来。</p>"
+        )
+        description = clean_html_tags(html)
+        self.assertIn("这是专辑的正式文字简介", description)
+        self.assertNotIn("订阅+专辑评论区", description)
+        self.assertNotEqual(description, "暂无简介信息")
 
     def test_ximalaya_release_year_ignores_track_and_update_timestamps(self):
         payload = {
