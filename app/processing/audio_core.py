@@ -119,6 +119,38 @@ def get_single_audio_info(file_path: str) -> dict:
         success, bitrate_str, codec, duration = get_wav_bitrate(file_path)
         if success: return {"codec": codec, "bitrate": bitrate_str, "duration": duration}
         else: return {"codec": "WAV", "bitrate": "0kbps", "duration": 300.0}
+
+    # ffprobe recognizes stream layouts that Mutagen does not fully expose,
+    # including E-AC-3/JOC Dolby Atmos audio in MP4/M4A containers.
+    if os.path.exists(FFPROBE_PATH):
+        startupinfo = None
+        if sys.platform == "win32":
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+        try:
+            cmd = [FFPROBE_PATH, "-v", "quiet", "-select_streams", "a:0", "-show_entries", "stream=codec_name,bit_rate:format=duration,bit_rate,size", "-of", "json", file_path]
+            result = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding=SYSTEM_ENCODING, errors="ignore", timeout=30, startupinfo=startupinfo)
+            if result.returncode != 0:
+                raise Exception(f"ffprobe执行失败: {result.stderr[:200] if result.stderr else '未知'}")
+
+            data = json.loads(result.stdout)
+            streams = data.get("streams", [{}])[0]
+            format_data = data.get("format", {})
+            duration = float(format_data.get("duration", 0) or 0)
+            stream_bitrate = streams.get("bit_rate")
+            format_bitrate = format_data.get("bit_rate")
+            bitrate_bps = int(stream_bitrate) if str(stream_bitrate).isdigit() else int(format_bitrate) if str(format_bitrate).isdigit() else 0
+            if bitrate_bps <= 0 and duration > 0:
+                file_size = int(format_data.get("size") or os.path.getsize(file_path))
+                bitrate_bps = int((file_size * 8) / duration)
+
+            codec = streams.get("codec_name", "unknown").upper()
+            return {"codec": codec, "bitrate": f"{int(bitrate_bps / 1000)}kbps" if bitrate_bps > 0 else "0kbps", "duration": duration}
+        except Exception:
+            # Continue with Mutagen when ffprobe is unavailable or cannot read a file.
+            pass
+
     try:
         import mutagen
         audio = mutagen.File(file_path)
@@ -126,33 +158,12 @@ def get_single_audio_info(file_path: str) -> dict:
             duration = float(audio.info.length)
             bitrate_bps = getattr(audio.info, 'bitrate', 0)
             codec = {'.mp3': 'MP3', '.m4a': 'AAC', '.flac': 'FLAC', '.aac': 'AAC', '.ogg': 'OGG'}.get(file_ext, 'AAC')
-            return {"codec": codec, "bitrate": f"{int(bitrate_bps / 1000)}kbps" if bitrate_bps > 0 else "128kbps", "duration": duration}
+            if not bitrate_bps and duration > 0:
+                bitrate_bps = int((os.path.getsize(file_path) * 8) / duration)
+            return {"codec": codec, "bitrate": f"{int(bitrate_bps / 1000)}kbps" if bitrate_bps > 0 else "0kbps", "duration": duration}
     except Exception: pass
 
-    if not os.path.exists(FFPROBE_PATH): raise Exception(f"ffprobe工具不存在: {FFPROBE_PATH}")
-    startupinfo = None
-    if sys.platform == "win32":
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        startupinfo.wShowWindow = subprocess.SW_HIDE
-    try:
-        cmd = [FFPROBE_PATH, "-v", "quiet", "-select_streams", "a:0", "-show_entries", "stream=codec_name,bit_rate:format=duration,bit_rate", "-of", "json", file_path]
-        result = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding=SYSTEM_ENCODING, errors="ignore", timeout=30, startupinfo=startupinfo)
-        if result.returncode != 0: raise Exception(f"ffprobe执行失败: {result.stderr[:200] if result.stderr else '未知'}")
-        data = json.loads(result.stdout)
-        streams = data.get("streams", [{}])[0]
-        format_data = data.get("format", {})
-        codec = streams.get("codec_name", "aac").upper()
-        duration = float(format_data.get("duration", 300.0))
-        bitrate_bps = int(streams["bit_rate"]) if streams.get("bit_rate") and streams["bit_rate"].isdigit() else int(format_data["bit_rate"]) if format_data.get("bit_rate") and format_data["bit_rate"].isdigit() else int((os.path.getsize(file_path) * 8) / duration) if duration > 0 else 0
-        return {"codec": codec, "bitrate": f"{int(bitrate_bps / 1000)}kbps" if bitrate_bps > 0 else "0kbps", "duration": duration}
-    except Exception as e:
-        try:
-            file_size = os.path.getsize(file_path)
-            codec = {'.mp3': 'MP3', '.m4a': 'AAC', '.flac': 'FLAC', '.aac': 'AAC', '.ogg': 'OGG', '.wav': 'WAV'}.get(file_ext, 'AAC')
-            bitrate_bps = int((file_size * 8) / 600.0)
-            return {"codec": codec, "bitrate": f"{int(bitrate_bps / 1000)}kbps" if bitrate_bps > 0 else "128kbps", "duration": 600.0}
-        except Exception: return {"codec": "AAC", "bitrate": "128kbps", "duration": 300.0}
+    return {"codec": {'.mp3': 'MP3', '.m4a': 'AAC', '.flac': 'FLAC', '.aac': 'AAC', '.ogg': 'OGG', '.wav': 'WAV'}.get(file_ext, 'UNKNOWN'), "bitrate": "0kbps", "duration": 0.0}
 
 def get_audio_list(folder: str) -> (list, set):
     audio_exts = {"mp3", "m4a", "flac", "ogg", "wav", "aac", "alac", "wma"}

@@ -1,6 +1,8 @@
 import json
 import re
+import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from io import BytesIO
 from pathlib import Path
@@ -10,7 +12,7 @@ from PIL import Image
 
 from app.integrations.api_clients import _fanqie_parse_search_book, _fanqie_search_books, _matching_ypshuo_authors, fanqie_api, fanqie_cover_url, fanqie_release_year, search_platform_metadata
 from app.processing.metadata_helpers import build_output_folder_name
-from app.processing.audio_core import find_cover, load_manual_cover
+from app.processing.audio_core import find_cover, get_single_audio_info, load_manual_cover
 from app.processing.processor import load_operation_snapshot, resolve_output_folder_path, restore_operation_snapshot, save_operation_snapshot
 from app.integrations.network_utils import clean_html_tags
 from app.web.server import (
@@ -34,7 +36,7 @@ DOCKER_WEB_SOURCE = (Path(__file__).resolve().parents[1] / "app" / "web" / "serv
 
 class RegressionTests(unittest.TestCase):
     def test_web_ui_reports_release_version(self):
-        self.assertIn('class="brand-version">v1.0.3</span>', INDEX_HTML)
+        self.assertIn('class="brand-version">v1.0.4</span>', INDEX_HTML)
 
     @staticmethod
     def _image_bytes(image_format="PNG"):
@@ -433,6 +435,34 @@ class RegressionTests(unittest.TestCase):
     def test_output_folder_name_is_deterministic(self):
         value = build_output_folder_name("书名", "作者", "主播", "完结", "2024", "MP3", "128k", "RL")
         self.assertEqual(value, "书名 - 作者 - 演播主播 - 完结 - 2024 - MP3 128k -RL")
+
+    @patch("app.processing.audio_core.os.path.exists", return_value=True)
+    @patch("app.processing.audio_core.subprocess.run")
+    def test_audio_info_prefers_ffprobe_for_dolby_atmos_streams(self, run_mock, exists_mock):
+        run_mock.return_value = SimpleNamespace(
+            returncode=0,
+            stderr="",
+            stdout=json.dumps({
+                "streams": [{"codec_name": "eac3"}],
+                "format": {"duration": "120.0", "bit_rate": "704000", "size": "10560000"},
+            }),
+        )
+
+        info = get_single_audio_info("杜比全景声.m4a")
+
+        self.assertEqual(info, {"codec": "EAC3", "bitrate": "704kbps", "duration": 120.0})
+        self.assertIn("ffprobe", run_mock.call_args.args[0][0].lower())
+
+    @patch("app.processing.audio_core.os.path.getsize", return_value=10_560_000)
+    @patch("app.processing.audio_core.os.path.exists", return_value=False)
+    def test_audio_info_calculates_average_when_mutagen_has_no_bitrate(self, exists_mock, getsize_mock):
+        fake_mutagen = SimpleNamespace(
+            File=lambda path: SimpleNamespace(info=SimpleNamespace(length=120.0, bitrate=0))
+        )
+        with patch.dict(sys.modules, {"mutagen": fake_mutagen}):
+            info = get_single_audio_info("杜比全景声.m4a")
+
+        self.assertEqual(info, {"codec": "AAC", "bitrate": "704kbps", "duration": 120.0})
 
     def test_snapshot_round_trip(self):
         with tempfile.TemporaryDirectory() as temp:
