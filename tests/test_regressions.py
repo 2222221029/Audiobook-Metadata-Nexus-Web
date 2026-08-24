@@ -36,7 +36,7 @@ DOCKER_WEB_SOURCE = (Path(__file__).resolve().parents[1] / "app" / "web" / "serv
 
 class RegressionTests(unittest.TestCase):
     def test_web_ui_reports_release_version(self):
-        self.assertIn('class="brand-version">v1.0.4</span>', INDEX_HTML)
+        self.assertIn('class="brand-version">v1.0.5</span>', INDEX_HTML)
 
     @staticmethod
     def _image_bytes(image_format="PNG"):
@@ -294,6 +294,9 @@ class RegressionTests(unittest.TestCase):
     def test_custom_select_supports_platform_logos(self):
         self.assertIn("const _PLATFORM_BRANDS =", INDEX_HTML)
         self.assertIn("function createPlatformLogo", INDEX_HTML)
+        self.assertIn("function selectUsesPlatformLogos(select)", INDEX_HTML)
+        self.assertIn("select?.name === 'api_source' || select?.name === 'platform'", INDEX_HTML)
+        self.assertIn("renderCustomSelectOptionContent(option, nativeOption.textContent, select)", INDEX_HTML)
         self.assertIn(".platform-logo", INDEX_HTML)
         self.assertIn("/assets/platforms/ximalaya.jpg", INDEX_HTML)
         self.assertIn("image.src = brand.logo", INDEX_HTML)

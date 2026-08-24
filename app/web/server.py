@@ -34,7 +34,7 @@ from app.processing.metadata_helpers import build_output_folder_name
 
 
 APP_TITLE = "AudioMeta Nexus"
-APP_VERSION = "1.0.4"
+APP_VERSION = "1.0.5"
 DEFAULT_PORT = 8787
 RESOURCE_DIR = Path(__file__).resolve().parents[2]
 CONTAINER_CONFIG_PATH = Path("/config/process_params.json")
@@ -2952,7 +2952,7 @@ textarea { min-height: 104px; }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.8c3-1.2 5.8-.7 9 1.3 3.2-2 6-2.5 9-1.3v10.1c-3.1-1.1-6-.7-9 1.3-3-2-5.9-2.4-9-1.3V7.8Z"/><path d="M12.5 9.1v10.1"/><path d="M14.8 12.9c.9-2.5 1.8 2.5 2.7 0s1.8 2.5 2.7 0"/></svg>
         </span>
         <div class="brand-text">
-          <span class="brand-title">AudioMeta Nexus <span class="brand-version">v1.0.4</span></span>
+          <span class="brand-title">AudioMeta Nexus <span class="brand-version">v1.0.5</span></span>
           <span class="brand-sub">有声书元数据处理台</span>
         </div>
       </div>
@@ -3581,9 +3581,15 @@ textarea { min-height: 104px; }
       '自定义平台': { logo: '/assets/platforms/custom.svg' },
     };
 
-    function platformBrand(text) {
+    function platformBrand(text, allowCustomFallback = false) {
       const name = String(text || '').trim();
-      return _PLATFORM_BRANDS[name] || _PLATFORM_BRANDS[name.toLowerCase()] || (name && name !== '请选择' ? _PLATFORM_BRANDS['自定义平台'] : null);
+      const knownBrand = _PLATFORM_BRANDS[name] || _PLATFORM_BRANDS[name.toLowerCase()];
+      if (knownBrand) return knownBrand;
+      return allowCustomFallback && name && !name.startsWith('请选择') ? _PLATFORM_BRANDS['自定义平台'] : null;
+    }
+
+    function selectUsesPlatformLogos(select) {
+      return select?.name === 'api_source' || select?.name === 'platform';
     }
 
     function createPlatformLogo(brand) {
@@ -3600,14 +3606,16 @@ textarea { min-height: 104px; }
     }
 
     function platformLogoHtml(text) {
-      const brand = platformBrand(text);
+      const brand = platformBrand(text, true);
       if (!brand) return '';
       return `<span class="platform-logo" aria-hidden="true"><img src="${brand.logo}" alt="" decoding="async"></span>`;
     }
 
-    function renderCustomSelectOptionContent(option, text) {
+    function renderCustomSelectOptionContent(option, text, select) {
       option.replaceChildren();
-      const brand = platformBrand(text);
+      const brand = selectUsesPlatformLogos(select)
+        ? platformBrand(text, select.name === 'platform')
+        : null;
       if (brand) option.append(createPlatformLogo(brand));
       option.append(document.createTextNode(text));
     }
@@ -3667,7 +3675,9 @@ textarea { min-height: 104px; }
       const selected = select.options[select.selectedIndex];
       const selectedText = selected?.textContent || '请选择';
       value.replaceChildren();
-      const brand = platformBrand(selectedText);
+      const brand = selectUsesPlatformLogos(select)
+        ? platformBrand(selectedText, select.name === 'platform')
+        : null;
       if (brand) value.append(createPlatformLogo(brand));
       value.append(document.createTextNode(selectedText));
       trigger.disabled = select.disabled;
@@ -3741,7 +3751,7 @@ textarea { min-height: 104px; }
         const option = document.createElement('button');
         option.type = 'button';
         option.className = 'custom-select-option';
-        renderCustomSelectOptionContent(option, nativeOption.textContent);
+        renderCustomSelectOptionContent(option, nativeOption.textContent, select);
         option.disabled = nativeOption.disabled;
         option.tabIndex = nativeOption.selected ? 0 : -1;
         option.setAttribute('role', 'option');
